@@ -3,7 +3,14 @@ export const TOOLS = {
   'github-copilot': {
     id: 'github-copilot',
     name: 'GitHub Copilot',
-    skillsPath: '.github/copilot/skills',
+    // Prompts = user-invocable commands in Copilot Chat (/oba-init, etc.)
+    promptsPath: '.github/prompts',
+    // Skills = behavior instructions loaded automatically by the model
+    skillsPath: '.github/skills',
+    // Skill folder prefix follows Copilot convention: openba-xxx
+    skillPrefix: 'openba-',
+    // Whether to generate a .github/copilot-instructions.md template
+    copilotInstructions: true,
     agentsFile: null,
     description: 'GitHub Copilot (VS Code, JetBrains, web)'
   },

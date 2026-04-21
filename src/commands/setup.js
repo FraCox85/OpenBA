@@ -4,7 +4,7 @@ const { prompt } = enquirer;
 import ora from 'ora';
 import { cwd } from 'process';
 import { TOOLS, SKILLS, CORE_SKILLS, SKILL_GROUPS } from '../lib/tools.js';
-import { installSkill, writeConfig, readConfig, getPackageVersion } from '../lib/installer.js';
+import { installSkill, writeConfig, readConfig, getPackageVersion, generateCopilotInstructions } from '../lib/installer.js';
 
 export async function run(args) {
   const targetRoot = cwd();
@@ -131,11 +131,28 @@ export async function run(args) {
   console.log('');
   console.log(chalk.bold('  Setup complete!\n'));
 
+  // Summary paths per tool
   for (const tool of selectedTools) {
-    if (tool.skillsPath) {
+    if (tool.promptsPath) {
+      // GitHub Copilot: mostra entrambi i path
+      console.log(chalk.dim(`  [${tool.name}] Prompts → ${tool.promptsPath}/   (usa /oba-xxx in Copilot Chat)`));
+      console.log(chalk.dim(`  [${tool.name}] Skills  → ${tool.skillsPath}/`));
+    } else if (tool.skillsPath) {
       console.log(chalk.dim(`  [${tool.name}] Skills installed to: ${tool.skillsPath}/`));
     } else {
       console.log(chalk.dim(`  [${tool.name}] Skills appended to: ${tool.agentsFile}`));
+    }
+  }
+
+  // Genera copilot-instructions.md se Copilot è tra i tool selezionati
+  const hasCopilot = selectedTools.some(t => t.copilotInstructions);
+  if (hasCopilot) {
+    const ci = generateCopilotInstructions(targetRoot);
+    if (ci.skipped) {
+      console.log(chalk.dim(`  [GitHub Copilot] copilot-instructions.md already exists — not overwritten`));
+    } else {
+      console.log(chalk.green(`  [GitHub Copilot] ✓ Template created: ${ci.path}`));
+      console.log(chalk.dim('                      Edit it to add your project-specific BA context.'));
     }
   }
 
