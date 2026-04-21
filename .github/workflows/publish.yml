@@ -3,13 +3,13 @@ name: Publish to npm
 on:
   push:
     tags:
-      - 'v*'        # Trigger su qualsiasi tag tipo v1.0.0, v1.2.3
+      - 'v*'
 
 jobs:
   publish:
     runs-on: ubuntu-latest
     permissions:
-      contents: read
+      contents: write   # Necessario per creare GitHub Release
       id-token: write   # Necessario per npm provenance
 
     steps:
