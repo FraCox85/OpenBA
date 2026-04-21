@@ -4,7 +4,7 @@ const { prompt } = enquirer;
 import ora from 'ora';
 import { cwd } from 'process';
 import { TOOLS, SKILLS, CORE_SKILLS, SKILL_GROUPS } from '../lib/tools.js';
-import { installSkill, writeConfig, readConfig, getPackageVersion, generateCopilotInstructions } from '../lib/installer.js';
+import { installSkill, writeConfig, readConfig, getPackageVersion, generateCopilotInstructions, generateAgentInstructions } from '../lib/installer.js';
 
 export async function run(args) {
   const targetRoot = cwd();
@@ -134,17 +134,26 @@ export async function run(args) {
   // Summary paths per tool
   for (const tool of selectedTools) {
     if (tool.promptsPath) {
-      // GitHub Copilot: mostra entrambi i path
+      // GitHub Copilot
       console.log(chalk.dim(`  [${tool.name}] Prompts → ${tool.promptsPath}/   (usa /oba-xxx in Copilot Chat)`));
       console.log(chalk.dim(`  [${tool.name}] Skills  → ${tool.skillsPath}/`));
+    } else if (tool.commandsPath && tool.commandExt === '.toml') {
+      // Gemini CLI
+      console.log(chalk.dim(`  [${tool.name}] Commands → ${tool.commandsPath}/   (file .toml per ogni skill)`));
+      console.log(chalk.dim(`  [${tool.name}] Skills   → ${tool.skillsPath}/`));
+    } else if (tool.commandsPath) {
+      // Claude Code
+      console.log(chalk.dim(`  [${tool.name}] Commands → ${tool.commandsPath}/   (usa /openba:xxx in Claude)`));
+      console.log(chalk.dim(`  [${tool.name}] Skills   → ${tool.skillsPath}/`));
     } else if (tool.skillsPath) {
-      console.log(chalk.dim(`  [${tool.name}] Skills installed to: ${tool.skillsPath}/`));
+      // Codex, Antigravity, Cursor, Windsurf
+      console.log(chalk.dim(`  [${tool.name}] Skills → ${tool.skillsPath}/`));
     } else {
       console.log(chalk.dim(`  [${tool.name}] Skills appended to: ${tool.agentsFile}`));
     }
   }
 
-  // Genera copilot-instructions.md se Copilot è tra i tool selezionati
+  // Genera istruzioni per Copilot
   const hasCopilot = selectedTools.some(t => t.copilotInstructions);
   if (hasCopilot) {
     const ci = generateCopilotInstructions(targetRoot);
@@ -153,6 +162,20 @@ export async function run(args) {
     } else {
       console.log(chalk.green(`  [GitHub Copilot] ✓ Template created: ${ci.path}`));
       console.log(chalk.dim('                      Edit it to add your project-specific BA context.'));
+    }
+  }
+
+  // Genera file di istruzioni root (CLAUDE.md, GEMINI.md, AGENTS.md) per i tool che lo richiedono
+  for (const tool of selectedTools) {
+    if (tool.instructionFile) {
+      const res = generateAgentInstructions(tool, targetRoot);
+      if (res.ok) {
+        if (res.skipped) {
+          console.log(chalk.dim(`  [${tool.name}] ${res.path} already exists — not overwritten`));
+        } else {
+          console.log(chalk.green(`  [${tool.name}] ✓ Template created: ${res.path}`));
+        }
+      }
     }
   }
 

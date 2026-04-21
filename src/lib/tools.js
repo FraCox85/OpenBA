@@ -17,7 +17,13 @@ export const TOOLS = {
   'claude': {
     id: 'claude',
     name: 'Claude Code',
+    // Slash commands: /openba:init, /openba:create-epic, etc.
+    commandsPath: '.claude/commands/openba',
+    // Behavior skills loaded automatically by the model
     skillsPath: '.claude/skills',
+    // Skill folder prefix follows Claude/OpenSpec convention: openba-xxx
+    skillPrefix: 'openba-',
+    instructionFile: 'CLAUDE.md',
     agentsFile: null,
     description: 'Claude Code (CLI)'
   },
@@ -38,23 +44,34 @@ export const TOOLS = {
   'codex': {
     id: 'codex',
     name: 'Codex (OpenAI)',
-    skillsPath: null,
-    agentsFile: 'AGENTS.md',
-    description: 'OpenAI Codex CLI — uses AGENTS.md'
+    skillsPath: '.codex/skills',
+    skillPrefix: 'openba-',
+    instructionFile: 'AGENTS.md',
+    agentsFile: null,
+    description: 'OpenAI Codex CLI'
   },
   'gemini': {
     id: 'gemini',
     name: 'Gemini CLI',
-    skillsPath: null,
-    agentsFile: 'GEMINI.md',
+    // Slash commands: .gemini/commands/openba/init.toml
+    commandsPath: '.gemini/commands/openba',
+    commandExt: '.toml',
+    // Behavior skills
+    skillsPath: '.gemini/skills',
+    skillPrefix: 'openba-',
+    instructionFile: 'GEMINI.md',
+    agentsFile: null,
     description: 'Google Gemini CLI'
   },
   'antigravity': {
     id: 'antigravity',
     name: 'Antigravity',
-    skillsPath: null,
-    agentsFile: 'AGENTS.md',
-    description: 'Antigravity AI — uses AGENTS.md'
+    commandsPath: '.agent/workflows',
+    skillsPath: '.agent/skills',
+    skillPrefix: 'openba-',
+    instructionFile: 'AGENTS.md',
+    agentsFile: null,
+    description: 'Antigravity AI'
   }
 };
 

@@ -4,6 +4,11 @@ import { execSync } from 'child_process';
 import { cwd } from 'process';
 import { TOOLS } from '../lib/tools.js';
 import { installSkill, readConfig, writeConfig, getPackageVersion } from '../lib/installer.js';
+import enquirer from 'enquirer';
+import { rmSync, existsSync } from 'fs';
+import { join } from 'path';
+
+const { prompt } = enquirer;
 
 export async function run(args) {
   const targetRoot = cwd();
@@ -16,15 +21,22 @@ export async function run(args) {
     process.exit(1);
   }
 
-  const tool = TOOLS[config.tool];
-  if (!tool) {
-    console.log(chalk.red(`  ✗ Unknown tool in config: ${config.tool}`));
+  // Retro-compatibilità: supporta sia vecchio config (singolo tool) che nuovo (array tools)
+  const toolIds = config.tools || (config.tool ? [config.tool] : []);
+  if (toolIds.length === 0) {
+    console.log(chalk.red('  ✗ No configured tools found. Run `openba setup` to configure.\n'));
+    process.exit(1);
+  }
+
+  const selectedTools = toolIds.map(id => TOOLS[id]).filter(Boolean);
+  if (selectedTools.length === 0) {
+    console.log(chalk.red(`  ✗ Unknown tools in config: ${toolIds.join(', ')}`));
     console.log(chalk.dim('  Run `openba setup` to reconfigure.\n'));
     process.exit(1);
   }
 
   const currentVersion = getPackageVersion();
-  console.log(chalk.dim(`  Tool:            ${tool.name}`));
+  console.log(chalk.dim(`  Tools:           ${selectedTools.map(t => t.name).join(', ')}`));
   console.log(chalk.dim(`  Skills:          ${config.skills.length}`));
   console.log(chalk.dim(`  Current version: ${currentVersion}\n`));
 
@@ -70,34 +82,64 @@ export async function run(args) {
     console.log(chalk.green(`  ✓ Package is up to date (v${currentVersion})\n`));
   }
 
+  // Richiesta all'utente per pulizia
+  const { wipe } = await prompt({
+    type: 'confirm',
+    name: 'wipe',
+    message: 'Do you want to delete all existing OpenBA skills and commands before updating (ensures a clean state)?',
+    initial: true
+  });
+
+  if (wipe) {
+    for (const tool of selectedTools) {
+      const pathsToWipe = [tool.skillsPath, tool.commandsPath, tool.promptsPath].filter(Boolean);
+      for (const p of pathsToWipe) {
+        const fullPath = join(targetRoot, p);
+        if (existsSync(fullPath)) {
+          rmSync(fullPath, { recursive: true, force: true });
+        }
+      }
+    }
+    console.log(chalk.dim('  Deleted old skill and command folders.'));
+  }
+
   // Step 3 — Aggiorna i file delle skill nel progetto
   const skillSpinner = ora({ text: 'Updating skill files...', color: 'cyan' }).start();
-  const results = [];
+  const resultsByTool = [];
 
-  for (const skillId of config.skills) {
-    const result = installSkill(skillId, tool, targetRoot);
-    results.push({ skillId, ...result });
-    skillSpinner.text = `Updating ${skillId}...`;
+  for (const tool of selectedTools) {
+    const results = [];
+    for (const skillId of config.skills) {
+      const result = installSkill(skillId, tool, targetRoot);
+      results.push({ skillId, ...result });
+      skillSpinner.text = `[${tool.name}] Updating ${skillId}...`;
+    }
+    resultsByTool.push({ tool, results });
   }
 
   skillSpinner.succeed('Skill files updated');
 
-  const ok = results.filter(r => r.ok);
-  const failed = results.filter(r => !r.ok);
-
   console.log('');
-  ok.forEach(r => console.log(chalk.green(`  ✓ ${r.skillId}`)));
-  failed.forEach(r => console.log(chalk.red(`  ✗ ${r.skillId} — ${r.reason}`)));
+  for (const { tool, results } of resultsByTool) {
+    console.log(chalk.bold(`  ${tool.name}:`));
+    const ok = results.filter(r => r.ok);
+    const failed = results.filter(r => !r.ok);
+    ok.forEach(r => console.log(chalk.green(`    ✓ ${r.skillId}`)));
+    failed.forEach(r => console.log(chalk.red(`    ✗ ${r.skillId} — ${r.reason}`)));
+  }
 
   // Aggiorna config con nuova versione
   const newVersion = latestVersion || currentVersion;
   writeConfig(targetRoot, { ...config, version: newVersion });
 
+  const totalOk = resultsByTool.reduce((sum, current) => sum + current.results.filter(r => r.ok).length, 0);
+  const totalFailed = resultsByTool.reduce((sum, current) => sum + current.results.filter(r => !r.ok).length, 0);
+
   console.log('');
-  if (failed.length === 0) {
-    console.log(chalk.bold(`  ✓ ${ok.length} skills updated to v${newVersion}\n`));
+  if (totalFailed === 0) {
+    console.log(chalk.bold(`  ✓ ${config.skills.length} skills updated across ${selectedTools.length} tool(s) to v${newVersion}\n`));
   } else {
-    console.log(chalk.bold(`  ${ok.length} updated, ${chalk.red(failed.length + ' failed')}\n`));
+    console.log(chalk.bold(`  ${totalOk} updated, ${chalk.red(totalFailed + ' failed')}\n`));
     console.log(chalk.dim('  Run `openba validate` to check skill integrity.\n'));
   }
 }
