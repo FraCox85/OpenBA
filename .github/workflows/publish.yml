@@ -35,9 +35,9 @@ jobs:
           fi
 
       - name: Publish to npm
-        run: |
-          npm publish --access public --provenance || \
-          echo "Version already published — skipping"
+        id: publish
+        continue-on-error: true
+        run: npm publish --access public --provenance
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
