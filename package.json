@@ -1,8 +1,17 @@
 {
   "name": "@fracox85/openba",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "OpenBA — Business Analyst-first spec framework for AI coding assistants",
-  "keywords": ["business-analyst", "prd", "pbi", "spec", "ai", "copilot", "cursor", "openba"],
+  "keywords": [
+    "business-analyst",
+    "prd",
+    "pbi",
+    "spec",
+    "ai",
+    "copilot",
+    "cursor",
+    "openba"
+  ],
   "author": "FraCox85",
   "license": "MIT",
   "homepage": "https://github.com/FraCox85/OpenBA",

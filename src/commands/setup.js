@@ -1,5 +1,6 @@
 import chalk from 'chalk';
-import { prompt } from 'enquirer';
+import enquirer from 'enquirer';
+const { prompt } = enquirer;
 import ora from 'ora';
 import { cwd } from 'process';
 import { TOOLS, SKILLS, CORE_SKILLS, SKILL_GROUPS } from '../lib/tools.js';

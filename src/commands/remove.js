@@ -1,5 +1,6 @@
 import chalk from 'chalk';
-import { prompt } from 'enquirer';
+import enquirer from 'enquirer';
+const { prompt } = enquirer;
 import { cwd } from 'process';
 import { TOOLS, CORE_SKILLS, SKILLS } from '../lib/tools.js';
 import { removeSkill, readConfig, writeConfig } from '../lib/installer.js';
