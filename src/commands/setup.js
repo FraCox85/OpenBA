@@ -15,8 +15,9 @@ export async function run(args) {
   // Check se già configurato
   const existing = readConfig(targetRoot);
   if (existing) {
+    const toolList = (existing.tools ?? [existing.tool]).filter(Boolean).join(', ');
     console.log(chalk.yellow('  ⚠  OpenBA is already set up in this project.'));
-    console.log(chalk.dim(`     Tool: ${existing.tool} | Skills: ${existing.skills.length} installed\n`));
+    console.log(chalk.dim(`     Tools: ${toolList} | Skills: ${existing.skills.length} installed\n`));
     const { proceed } = await prompt({
       type: 'confirm',
       name: 'proceed',
@@ -29,23 +30,29 @@ export async function run(args) {
     }
   }
 
-  // Step 1 — Selezione tool
-  console.log(chalk.bold('  Step 1 of 2 — Select your AI coding assistant\n'));
+  // Step 1 — Selezione tool (multipla)
+  console.log(chalk.bold('  Step 1 of 2 — Select your AI coding assistants\n'));
+  console.log(chalk.dim('  Use space to toggle, enter to confirm.\n'));
 
   const toolChoices = Object.values(TOOLS).map(t => ({
     name: t.id,
     message: `${t.name.padEnd(20)} ${chalk.dim(t.description)}`
   }));
 
-  const { toolId } = await prompt({
-    type: 'select',
-    name: 'toolId',
-    message: 'Which AI tool do you use?',
+  const { toolIds } = await prompt({
+    type: 'multiselect',
+    name: 'toolIds',
+    message: 'Which AI tools do you use?',
     choices: toolChoices
   });
 
-  const tool = TOOLS[toolId];
-  console.log(chalk.green(`\n  ✓ Selected: ${tool.name}`));
+  if (!toolIds || toolIds.length === 0) {
+    console.log(chalk.red('\n  ✗ No tools selected. Aborting.\n'));
+    process.exit(1);
+  }
+
+  const selectedTools = toolIds.map(id => TOOLS[id]);
+  console.log(chalk.green(`\n  ✓ Selected: ${selectedTools.map(t => t.name).join(', ')}`));
 
   // Step 2 — Selezione skill
   console.log(chalk.bold('\n  Step 2 of 2 — Select skills to install\n'));
@@ -79,33 +86,44 @@ export async function run(args) {
       .map(s => s.id)
   ];
 
-  console.log(chalk.dim(`\n  Installing ${selectedSkillIds.length} skills for ${tool.name}...\n`));
+  console.log(chalk.dim(`\n  Installing ${selectedSkillIds.length} skills for ${selectedTools.length} tool(s)...\n`));
 
-  // Installa
+  // Installa per ogni tool selezionato
   const spinner = ora({ text: 'Installing skills...', color: 'cyan' }).start();
-  const results = [];
+  const resultsByTool = [];
 
-  for (const skillId of selectedSkillIds) {
-    const result = installSkill(skillId, tool, targetRoot);
-    results.push({ skillId, ...result });
-    spinner.text = `Installing ${skillId}...`;
+  for (const tool of selectedTools) {
+    const results = [];
+    for (const skillId of selectedSkillIds) {
+      const result = installSkill(skillId, tool, targetRoot);
+      results.push({ skillId, ...result });
+      spinner.text = `[${tool.name}] Installing ${skillId}...`;
+    }
+    resultsByTool.push({ tool, results });
   }
 
   spinner.succeed('Skills installed');
 
-  // Report
-  const ok = results.filter(r => r.ok);
-  const failed = results.filter(r => !r.ok);
-
+  // Report per tool
   console.log('');
-  ok.forEach(r => console.log(chalk.green(`  ✓ ${r.skillId}`)));
-  failed.forEach(r => console.log(chalk.red(`  ✗ ${r.skillId} — ${r.reason}`)));
+  for (const { tool, results } of resultsByTool) {
+    console.log(chalk.bold(`  ${tool.name}:`));
+    const ok = results.filter(r => r.ok);
+    const failed = results.filter(r => !r.ok);
+    ok.forEach(r => console.log(chalk.green(`    ✓ ${r.skillId}`)));
+    failed.forEach(r => console.log(chalk.red(`    ✗ ${r.skillId} — ${r.reason}`)));
+  }
+
+  // Skills ok (union di tutti i tool — deduplicata)
+  const allOkSkills = [...new Set(
+    resultsByTool.flatMap(({ results }) => results.filter(r => r.ok).map(r => r.skillId))
+  )];
 
   // Salva config
   writeConfig(targetRoot, {
     version: getPackageVersion(),
-    tool: toolId,
-    skills: ok.map(r => r.skillId),
+    tools: toolIds,
+    skills: allOkSkills,
     installedAt: new Date().toISOString()
   });
 
@@ -113,10 +131,12 @@ export async function run(args) {
   console.log('');
   console.log(chalk.bold('  Setup complete!\n'));
 
-  if (tool.skillsPath) {
-    console.log(chalk.dim(`  Skills installed to: ${tool.skillsPath}/`));
-  } else {
-    console.log(chalk.dim(`  Skills appended to: ${tool.agentsFile}`));
+  for (const tool of selectedTools) {
+    if (tool.skillsPath) {
+      console.log(chalk.dim(`  [${tool.name}] Skills installed to: ${tool.skillsPath}/`));
+    } else {
+      console.log(chalk.dim(`  [${tool.name}] Skills appended to: ${tool.agentsFile}`));
+    }
   }
 
   console.log(chalk.dim('  Config saved to: .openba/config.json'));
