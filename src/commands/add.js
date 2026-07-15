@@ -14,7 +14,11 @@ export async function run(args) {
     process.exit(1);
   }
 
-  const tool = TOOLS[config.tool];
+  const selectedTools = (config.tools || []).map(id => TOOLS[id]).filter(Boolean);
+  if (selectedTools.length === 0) {
+    console.log(chalk.red('\n  ✗ No configured tools found. Run `openba setup` first.\n'));
+    process.exit(1);
+  }
 
   // Se skill-id passato come argomento
   let skillId = args[0];
@@ -54,15 +58,23 @@ export async function run(args) {
     process.exit(0);
   }
 
-  const result = installSkill(skillId, tool, targetRoot);
+  console.log('');
+  let anyFailed = false;
+  for (const tool of selectedTools) {
+    const result = installSkill(skillId, tool, targetRoot);
+    if (result.ok) {
+      console.log(chalk.green(`  ✓ [${tool.name}] ${skillId} installed`));
+      console.log(chalk.dim(`    Path: ${result.path}`));
+    } else {
+      anyFailed = true;
+      console.log(chalk.red(`  ✗ [${tool.name}] Failed to install ${skillId}: ${result.reason}`));
+    }
+  }
+  console.log('');
 
-  if (result.ok) {
-    // Aggiorna config
-    writeConfig(targetRoot, { ...config, skills: [...config.skills, skillId] });
-    console.log(chalk.green(`\n  ✓ ${skillId} installed`));
-    console.log(chalk.dim(`    Path: ${result.path}\n`));
-  } else {
-    console.log(chalk.red(`\n  ✗ Failed to install ${skillId}: ${result.reason}\n`));
+  if (anyFailed) {
     process.exit(1);
   }
+
+  writeConfig(targetRoot, { ...config, skills: [...config.skills, skillId] });
 }

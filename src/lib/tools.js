@@ -3,12 +3,10 @@ export const TOOLS = {
   'github-copilot': {
     id: 'github-copilot',
     name: 'GitHub Copilot',
-    // Prompts = user-invocable commands in Copilot Chat (/oba-init, etc.)
+    // Prompts = user-invocable commands in Copilot Chat (/openba-init, etc.)
     promptsPath: '.github/prompts',
     // Skills = behavior instructions loaded automatically by the model
     skillsPath: '.github/skills',
-    // Skill folder prefix follows Copilot convention: openba-xxx
-    skillPrefix: 'openba-',
     // Whether to generate a .github/copilot-instructions.md template
     copilotInstructions: true,
     agentsFile: null,
@@ -17,12 +15,10 @@ export const TOOLS = {
   'claude': {
     id: 'claude',
     name: 'Claude Code',
-    // Slash commands: /openba:init, /openba:create-epic, etc.
+    // Slash commands: /openba:init, /openba:discover, etc.
     commandsPath: '.claude/commands/openba',
     // Behavior skills loaded automatically by the model
     skillsPath: '.claude/skills',
-    // Skill folder prefix follows Claude/OpenSpec convention: openba-xxx
-    skillPrefix: 'openba-',
     instructionFile: 'CLAUDE.md',
     agentsFile: null,
     description: 'Claude Code (CLI)'
@@ -45,7 +41,6 @@ export const TOOLS = {
     id: 'codex',
     name: 'Codex (OpenAI)',
     skillsPath: '.codex/skills',
-    skillPrefix: 'openba-',
     instructionFile: 'AGENTS.md',
     agentsFile: null,
     description: 'OpenAI Codex CLI'
@@ -53,12 +48,11 @@ export const TOOLS = {
   'gemini': {
     id: 'gemini',
     name: 'Gemini CLI',
-    // Slash commands: .gemini/commands/openba/init.toml
+    // Slash commands: .gemini/commands/openba/discover.toml
     commandsPath: '.gemini/commands/openba',
     commandExt: '.toml',
     // Behavior skills
     skillsPath: '.gemini/skills',
-    skillPrefix: 'openba-',
     instructionFile: 'GEMINI.md',
     agentsFile: null,
     description: 'Google Gemini CLI'
@@ -68,7 +62,6 @@ export const TOOLS = {
     name: 'Antigravity',
     commandsPath: '.agent/workflows',
     skillsPath: '.agent/skills',
-    skillPrefix: 'openba-',
     instructionFile: 'AGENTS.md',
     agentsFile: null,
     description: 'Antigravity AI'
@@ -76,35 +69,24 @@ export const TOOLS = {
 };
 
 // Skills list — ID matches folder name in /skills/
+// Pipeline order: init runs once, discover -> trace is the sequential BABOK flow,
+// bcm / debate / status are cross-cutting skills usable at any point.
 export const SKILLS = [
-  // Core — always installed
-  { id: 'oba-init',             name: 'oba-init',             group: 'core',    description: 'Initialize OpenBA workspace' },
-  { id: 'oba-status',           name: 'oba-status',           group: 'core',    description: 'Query project status' },
-  { id: 'oba-bcm',              name: 'oba-bcm',              group: 'core',    description: 'Business Capability Map' },
-
-  // Epic
-  { id: 'oba-create-epic',      name: 'oba-create-epic',      group: 'epic',    description: 'Create a new epic — discovery + BACCM + Grill Me → PRD' },
-  { id: 'oba-review-epic',      name: 'oba-review-epic',      group: 'epic',    description: 'Review an Epic PRD' },
-
-  // Feature
-  { id: 'oba-create-features',  name: 'oba-create-features',  group: 'feature', description: 'Split a PRD into features' },
-  { id: 'oba-add-feature',      name: 'oba-add-feature',      group: 'feature', description: 'Add a feature to an existing epic' },
-  { id: 'oba-remove-feature',   name: 'oba-remove-feature',   group: 'feature', description: 'Remove a feature' },
-  { id: 'oba-review-feature',   name: 'oba-review-feature',   group: 'feature', description: 'Review a feature spec' },
-
-  // PBI
-  { id: 'oba-create-pbis',      name: 'oba-create-pbis',      group: 'pbi',     description: 'Split a feature into PBIs' },
-  { id: 'oba-add-pbi',          name: 'oba-add-pbi',          group: 'pbi',     description: 'Add a PBI to an existing feature' },
-  { id: 'oba-remove-pbi',       name: 'oba-remove-pbi',       group: 'pbi',     description: 'Remove a PBI' },
-  { id: 'oba-debate-pbi',       name: 'oba-debate-pbi',       group: 'pbi',     description: 'Deep debate on a single PBI' },
-  { id: 'oba-review-pbi',       name: 'oba-review-pbi',       group: 'pbi',     description: 'Review a PBI (fresh-eyes verdict)' },
+  { id: 'openba-init',      name: 'openba-init',      group: 'core',      description: 'Initialize the .openba workspace (run once per project)' },
+  { id: 'openba-discover',  name: 'openba-discover',  group: 'pipeline',  description: 'Situation analysis (AS-IS/TO-BE/Gap) and Need capture' },
+  { id: 'openba-elicit',    name: 'openba-elicit',    group: 'pipeline',  description: 'Stakeholder mapping and elicitation planning' },
+  { id: 'openba-specify',   name: 'openba-specify',   group: 'pipeline',  description: 'Write Requirements at all 5 BABOK levels' },
+  { id: 'openba-decompose', name: 'openba-decompose', group: 'pipeline',  description: 'Break Requirements into Features and PBIs' },
+  { id: 'openba-groom',     name: 'openba-groom',     group: 'pipeline',  description: 'Validate PBIs against DoR and INVEST, score readiness' },
+  { id: 'openba-archiver',  name: 'openba-archiver',  group: 'pipeline',  description: 'Archive, reject, deprecate, or restore any artifact' },
+  { id: 'openba-trace',     name: 'openba-trace',     group: 'pipeline',  description: 'Rebuild the traceability matrix and status board' },
+  { id: 'openba-bcm',       name: 'openba-bcm',       group: 'strategic', description: 'Business Capability Map — strategic capability view' },
+  { id: 'openba-debate',    name: 'openba-debate',    group: 'strategic', description: 'Deep adversarial debate on a single PBI' },
+  { id: 'openba-status',    name: 'openba-status',    group: 'strategic', description: 'Read-only project status dashboard with gap detection' },
 ];
 
-export const CORE_SKILLS = SKILLS.filter(s => s.group === 'core').map(s => s.id);
-
 export const SKILL_GROUPS = {
-  core:    'Core (always installed)',
-  epic:    'Epic management',
-  feature: 'Feature management',
-  pbi:     'PBI management'
+  core:      'Core',
+  pipeline:  'Pipeline (init → discover → ... → trace)',
+  strategic: 'Strategic',
 };

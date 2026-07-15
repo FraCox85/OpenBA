@@ -1,4 +1,4 @@
-import { existsSync, mkdirSync, copyFileSync, readFileSync, writeFileSync } from 'fs';
+import { existsSync, mkdirSync, cpSync, readFileSync, writeFileSync, rmSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 
@@ -7,108 +7,98 @@ const SKILLS_SOURCE = join(__dirname, '../../skills');
 
 // Installa una skill per un tool specifico
 export function installSkill(skillId, tool, targetRoot) {
-  const skillSource = join(SKILLS_SOURCE, skillId, 'SKILL.md');
+  const skillSourceDir = join(SKILLS_SOURCE, skillId);
+  const skillSourceFile = join(skillSourceDir, 'SKILL.md');
 
-  if (!existsSync(skillSource)) {
+  if (!existsSync(skillSourceFile)) {
     return { ok: false, reason: `Skill source not found: ${skillId}` };
   }
 
   // GitHub Copilot: installazione duale (prompt .md + skill)
   if (tool.promptsPath) {
-    return installCopilotSkill(skillId, skillSource, tool, targetRoot);
+    return installCopilotSkill(skillId, skillSourceDir, skillSourceFile, tool, targetRoot);
   }
 
   // Gemini CLI: installazione duale (command .toml + skill)
   if (tool.commandsPath && tool.commandExt === '.toml') {
-    return installGeminiSkill(skillId, skillSource, tool, targetRoot);
+    return installGeminiSkill(skillId, skillSourceDir, skillSourceFile, tool, targetRoot);
   }
 
   // Antigravity: installazione duale (workflow .md + skill) in .agent/
   if (tool.commandsPath && tool.id === 'antigravity') {
-    return installAntigravitySkill(skillId, skillSource, tool, targetRoot);
+    return installAntigravitySkill(skillId, skillSourceDir, skillSourceFile, tool, targetRoot);
   }
 
   // Claude Code: installazione duale (command .md + skill)
   if (tool.commandsPath) {
-    return installClaudeSkill(skillId, skillSource, tool, targetRoot);
+    return installClaudeSkill(skillId, skillSourceDir, skillSourceFile, tool, targetRoot);
   }
 
   if (tool.skillsPath) {
     // Tool con cartella skills dedicata (Cursor, Windsurf, Codex, ecc.)
-    // Se il tool ha uno skillPrefix, rinomina la cartella da oba- a openba- (o altro prefisso)
-    const folderName = tool.skillPrefix
-      ? skillId.replace(/^oba-/, tool.skillPrefix)
-      : skillId;
-    const destDir = join(targetRoot, tool.skillsPath, folderName);
-    mkdirSync(destDir, { recursive: true });
-    copyFileSync(skillSource, join(destDir, 'SKILL.md'));
-    return { ok: true, path: join(tool.skillsPath, folderName, 'SKILL.md') };
-
-  } else if (tool.agentsFile) {
-    // Fallback: tool che usano un file unico flat (legacy)
-    appendToAgentsFile(skillId, skillSource, tool.agentsFile, targetRoot);
-    return { ok: true, path: tool.agentsFile };
+    // Copia l'intera cartella della skill (SKILL.md + references/)
+    const destDir = join(targetRoot, tool.skillsPath, skillId);
+    cpSync(skillSourceDir, destDir, { recursive: true });
+    return { ok: true, path: join(tool.skillsPath, skillId, 'SKILL.md') };
   }
 
-  return { ok: false, reason: 'Tool has no promptsPath, commandsPath, skillsPath or agentsFile defined' };
+  return { ok: false, reason: 'Tool has no promptsPath, commandsPath or skillsPath defined' };
+}
+
+// Command name: strip openba- prefix -> init, discover, decompose, ecc.
+function commandName(skillId) {
+  return skillId.replace(/^openba-/, '');
 }
 
 // Installazione specifica per GitHub Copilot:
-//   1. .github/prompts/oba-xxx.prompt.md  ← comando utente (/oba-init in Copilot Chat)
-//   2. .github/skills/openba-xxx/SKILL.md ← behavior instruction caricata dal modello
-function installCopilotSkill(skillId, skillSource, tool, targetRoot) {
+//   1. .github/prompts/openba-xxx.prompt.md ← comando utente (/openba-xxx in Copilot Chat)
+//   2. .github/skills/openba-xxx/            ← skill completa (SKILL.md + references/) caricata dal modello
+function installCopilotSkill(skillId, skillSourceDir, skillSourceFile, tool, targetRoot) {
   const paths = [];
 
   // 1. Prompt file
   const promptsDir = join(targetRoot, tool.promptsPath);
   mkdirSync(promptsDir, { recursive: true });
   const promptDest = join(promptsDir, `${skillId}.prompt.md`);
-  copyFileSync(skillSource, promptDest);
+  cpSync(skillSourceFile, promptDest);
   paths.push(`${tool.promptsPath}/${skillId}.prompt.md`);
 
-  // 2. Skill behavior file (prefisso openba- per rispettare naming convention)
-  const prefix = tool.skillPrefix ?? 'openba-';
-  const skillFolderName = skillId.replace(/^oba-/, prefix);
-  const skillDir = join(targetRoot, tool.skillsPath, skillFolderName);
-  mkdirSync(skillDir, { recursive: true });
-  copyFileSync(skillSource, join(skillDir, 'SKILL.md'));
-  paths.push(`${tool.skillsPath}/${skillFolderName}/SKILL.md`);
+  // 2. Skill folder (behavior + references)
+  const skillDir = join(targetRoot, tool.skillsPath, skillId);
+  cpSync(skillSourceDir, skillDir, { recursive: true });
+  paths.push(`${tool.skillsPath}/${skillId}/SKILL.md`);
 
   return { ok: true, path: paths.join(' + ') };
 }
 
 // Installazione specifica per Claude Code:
-//   1. .claude/commands/openba/init.md       ← slash command /openba:init
-//   2. .claude/skills/openba-init/SKILL.md   ← behavior instruction caricata dal modello
-function installClaudeSkill(skillId, skillSource, tool, targetRoot) {
+//   1. .claude/commands/openba/discover.md    ← slash command /openba:discover
+//   2. .claude/skills/openba-discover/        ← skill completa (SKILL.md + references/)
+function installClaudeSkill(skillId, skillSourceDir, skillSourceFile, tool, targetRoot) {
   const paths = [];
 
-  // 1. Command file: strip oba- prefix → init.md, create-epic.md, ecc.
-  const commandName = skillId.replace(/^oba-/, '');
+  // 1. Command file
   const commandsDir = join(targetRoot, tool.commandsPath);
   mkdirSync(commandsDir, { recursive: true });
-  copyFileSync(skillSource, join(commandsDir, `${commandName}.md`));
-  paths.push(`${tool.commandsPath}/${commandName}.md`);
+  cpSync(skillSourceFile, join(commandsDir, `${commandName(skillId)}.md`));
+  paths.push(`${tool.commandsPath}/${commandName(skillId)}.md`);
 
-  // 2. Skill behavior file: prefisso openba-
-  const prefix = tool.skillPrefix ?? 'openba-';
-  const skillFolderName = skillId.replace(/^oba-/, prefix);
-  const skillDir = join(targetRoot, tool.skillsPath, skillFolderName);
-  mkdirSync(skillDir, { recursive: true });
-  copyFileSync(skillSource, join(skillDir, 'SKILL.md'));
-  paths.push(`${tool.skillsPath}/${skillFolderName}/SKILL.md`);
+  // 2. Skill folder (behavior + references)
+  const skillDir = join(targetRoot, tool.skillsPath, skillId);
+  cpSync(skillSourceDir, skillDir, { recursive: true });
+  paths.push(`${tool.skillsPath}/${skillId}/SKILL.md`);
 
   return { ok: true, path: paths.join(' + ') };
 }
 
 // Installazione specifica per Gemini CLI:
-//   1. .gemini/commands/openba/init.toml     ← command TOML (generato dal frontmatter)
-//   2. .gemini/skills/openba-init/SKILL.md   ← behavior instruction
-function installGeminiSkill(skillId, skillSource, tool, targetRoot) {
+//   1. .gemini/commands/openba/discover.toml ← command TOML (generato dal frontmatter)
+//   2. .gemini/skills/openba-discover/       ← skill completa (SKILL.md + references/)
+function installGeminiSkill(skillId, skillSourceDir, skillSourceFile, tool, targetRoot) {
   const paths = [];
 
   // Legge il frontmatter YAML dal SKILL.md per estrarre description
-  const content = readFileSync(skillSource, 'utf8');
+  const content = readFileSync(skillSourceFile, 'utf8');
   const fmMatch = content.match(/^---[\r\n]([\s\S]*?)[\r\n]---/);
   let description = skillId;
   if (fmMatch) {
@@ -117,34 +107,29 @@ function installGeminiSkill(skillId, skillSource, tool, targetRoot) {
     if (raw) description = raw.trim().replace(/\s+/g, ' ');
   }
 
-  // 1. Command TOML: strip oba- prefix → init.toml, create-epic.toml, ecc.
-  const commandName = skillId.replace(/^oba-/, '');
+  // 1. Command TOML
   const commandsDir = join(targetRoot, tool.commandsPath);
   mkdirSync(commandsDir, { recursive: true });
   const toml = `# OpenBA — ${skillId}\ndescription = "${description.replace(/"/g, "'")}"\n`;
-  writeFileSync(join(commandsDir, `${commandName}.toml`), toml);
-  paths.push(`${tool.commandsPath}/${commandName}.toml`);
+  writeFileSync(join(commandsDir, `${commandName(skillId)}.toml`), toml);
+  paths.push(`${tool.commandsPath}/${commandName(skillId)}.toml`);
 
-  // 2. Skill behavior file: prefisso openba-
-  const prefix = tool.skillPrefix ?? 'openba-';
-  const skillFolderName = skillId.replace(/^oba-/, prefix);
-  const skillDir = join(targetRoot, tool.skillsPath, skillFolderName);
-  mkdirSync(skillDir, { recursive: true });
-  copyFileSync(skillSource, join(skillDir, 'SKILL.md'));
-  paths.push(`${tool.skillsPath}/${skillFolderName}/SKILL.md`);
+  // 2. Skill folder (behavior + references)
+  const skillDir = join(targetRoot, tool.skillsPath, skillId);
+  cpSync(skillSourceDir, skillDir, { recursive: true });
+  paths.push(`${tool.skillsPath}/${skillId}/SKILL.md`);
 
   return { ok: true, path: paths.join(' + ') };
 }
 
 // Installazione specifica per Antigravity:
-//   1. .agent/workflows/openba-init.md       ← workflow .md
-//   2. .agent/skills/openba-init/SKILL.md    ← behavior instruction caricata dal modello
-function installAntigravitySkill(skillId, skillSource, tool, targetRoot) {
+//   1. .agent/workflows/openba-discover.md ← workflow .md
+//   2. .agent/skills/openba-discover/      ← skill completa (SKILL.md + references/)
+function installAntigravitySkill(skillId, skillSourceDir, skillSourceFile, tool, targetRoot) {
   const paths = [];
-  const prefix = tool.skillPrefix ?? 'openba-';
 
   // Legge il frontmatter YAML per copiare la description
-  const content = readFileSync(skillSource, 'utf8');
+  const content = readFileSync(skillSourceFile, 'utf8');
   const fmMatch = content.match(/^---[\r\n]([\s\S]*?)[\r\n]---/);
   let descriptionLine = '';
   if (fmMatch) {
@@ -152,96 +137,61 @@ function installAntigravitySkill(skillId, skillSource, tool, targetRoot) {
     if (raw) descriptionLine = `\ndescription: ${raw.trim()}`;
   }
 
-  // 1. Workflow file: rename con prefix (openba-init.md)
-  const workflowName = skillId.replace(/^oba-/, prefix);
+  // 1. Workflow file
   const workflowsDir = join(targetRoot, tool.commandsPath);
   mkdirSync(workflowsDir, { recursive: true });
   const workflowContent = `---${descriptionLine}\n---\n\nRun the OpenBA skill: ${skillId}\n`;
-  writeFileSync(join(workflowsDir, `${workflowName}.md`), workflowContent);
-  paths.push(`${tool.commandsPath}/${workflowName}.md`);
+  writeFileSync(join(workflowsDir, `${skillId}.md`), workflowContent);
+  paths.push(`${tool.commandsPath}/${skillId}.md`);
 
-  // 2. Skill behavior file: prefisso openba-
-  const skillDir = join(targetRoot, tool.skillsPath, workflowName);
-  mkdirSync(skillDir, { recursive: true });
-  copyFileSync(skillSource, join(skillDir, 'SKILL.md'));
-  paths.push(`${tool.skillsPath}/${workflowName}/SKILL.md`);
+  // 2. Skill folder (behavior + references)
+  const skillDir = join(targetRoot, tool.skillsPath, skillId);
+  cpSync(skillSourceDir, skillDir, { recursive: true });
+  paths.push(`${tool.skillsPath}/${skillId}/SKILL.md`);
 
   return { ok: true, path: paths.join(' + ') };
 }
 
-// Rimuove una skill installata
+// Rimuove una singola skill (cartella skill + relativo file command/prompt) per un tool specifico
 export function removeSkill(skillId, tool, targetRoot) {
-  if (tool.skillsPath) {
-    const destDir = join(targetRoot, tool.skillsPath, skillId);
-    if (existsSync(destDir)) {
-      import('fs').then(fs => fs.rmSync(destDir, { recursive: true }));
-      return { ok: true };
+  if (!tool.skillsPath && !tool.commandsPath && !tool.promptsPath) {
+    return { ok: false, reason: 'Tool has no promptsPath, commandsPath or skillsPath defined' };
+  }
+
+  let removedAny = false;
+  const removeIfExists = (relativePath) => {
+    const fullPath = join(targetRoot, relativePath);
+    if (existsSync(fullPath)) {
+      rmSync(fullPath, { recursive: true, force: true });
+      removedAny = true;
     }
-    return { ok: false, reason: 'Skill not installed' };
+  };
+
+  if (tool.skillsPath) {
+    removeIfExists(join(tool.skillsPath, skillId));
   }
-  // Per AGENTS.md non rimuoviamo — troppo rischioso parsare e modificare
-  return { ok: false, reason: `Manual removal required from ${tool.agentsFile}` };
+  if (tool.promptsPath) {
+    removeIfExists(join(tool.promptsPath, `${skillId}.prompt.md`));
+  }
+  if (tool.commandsPath) {
+    const ext = tool.commandExt || '.md';
+    // Antigravity usa il nome skill completo per il workflow; gli altri tool lo strippano del prefisso openba-
+    const name = tool.id === 'antigravity' ? skillId : commandName(skillId);
+    removeIfExists(join(tool.commandsPath, `${name}${ext}`));
+  }
+
+  return removedAny ? { ok: true } : { ok: false, reason: 'Skill not installed' };
 }
 
-// Genera il template .github/copilot-instructions.md (solo se non esiste già)
-export function generateCopilotInstructions(targetRoot) {
-  const destPath = join(targetRoot, '.github', 'copilot-instructions.md');
-  if (existsSync(destPath)) {
-    return { ok: true, skipped: true, path: '.github/copilot-instructions.md' };
+// Cancella tutte le cartelle skill/command/prompt di OpenBA per un tool (usato da `update` per una migrazione pulita)
+export function wipeTool(tool, targetRoot) {
+  const pathsToWipe = [tool.skillsPath, tool.commandsPath, tool.promptsPath].filter(Boolean);
+  for (const p of pathsToWipe) {
+    const fullPath = join(targetRoot, p);
+    if (existsSync(fullPath)) {
+      rmSync(fullPath, { recursive: true, force: true });
+    }
   }
-
-  const template = [
-    '# GitHub Copilot Instructions — [Project Name]\n',
-    '## Who I am and what I do\n',
-    'I am a *Business Analyst* working on this project.\n',
-    'My goal is to analyze and document the system using the OpenBA framework.\n',
-    '**Your role as AI:**',
-    '- Help me analyze requirements, user stories, and business processes',
-    '- Help me write and improve documentation',
-    '- Follow the OpenBA workflow: oba-init → oba-create-epic → oba-create-features → oba-create-pbis',
-    '- **DO NOT** suggest code implementations unless explicitly asked\n',
-    '---\n',
-    '## OpenBA Commands\n',
-    'Use `/oba-init` to initialize the workspace, then follow the epic → feature → PBI hierarchy.\n',
-    '---\n',
-    '## Project Notes\n',
-    '<!-- Add your project-specific context here -->\n',
-  ].join('\n');
-
-  mkdirSync(join(targetRoot, '.github'), { recursive: true });
-  writeFileSync(destPath, template);
-  return { ok: true, skipped: false, path: '.github/copilot-instructions.md' };
-}
-
-// Genera un file di istruzioni root (CLAUDE.md, GEMINI.md, AGENTS.md)
-export function generateAgentInstructions(tool, targetRoot) {
-  if (!tool.instructionFile) return { ok: false };
-  
-  const destPath = join(targetRoot, tool.instructionFile);
-  if (existsSync(destPath)) {
-    return { ok: true, skipped: true, path: tool.instructionFile };
-  }
-
-  const template = [
-    `# ${tool.instructionFile}\n`,
-    '## Role',
-    'You are the OpenBA Business Analyst agent for this project.\n',
-    '## Mission',
-    'Understand the codebase, write clear documentation, and structure work using OpenSpec-ready epics, features, and PBIs.',
-    '',
-    '## Responsibilities',
-    '- Explore the project to understand the business context.',
-    '- Use the available OpenBA skills (init, create-epic, create-features, etc.) when the user invokes them.',
-    '- Help clarify requirements.',
-    '- **DO NOT** suggest code implementations unless explicitly asked to switch context.\n',
-    '## Rules',
-    '- Talk business, not code. Explain classes and data in business terms.',
-    '- Do not overengineer documentation.',
-    '- Follow the OpenBA specs format precisely.\n'
-  ].join('\n');
-
-  writeFileSync(destPath, template);
-  return { ok: true, skipped: false, path: tool.instructionFile };
 }
 
 export function readConfig(targetRoot) {
@@ -260,25 +210,6 @@ export function writeConfig(targetRoot, config) {
   mkdirSync(configDir, { recursive: true });
   const configPath = join(configDir, 'config.json');
   writeFileSync(configPath, JSON.stringify({ ...config, updatedAt: new Date().toISOString() }, null, 2));
-}
-
-// Aggiunge una skill al file AGENTS.md / GEMINI.md
-function appendToAgentsFile(skillId, skillSource, agentsFile, targetRoot) {
-  const destPath = join(targetRoot, agentsFile);
-  const skillContent = readFileSync(skillSource, 'utf8');
-
-  const separator = `\n\n<!-- OpenBA skill: ${skillId} -->\n`;
-  const block = separator + skillContent;
-
-  if (existsSync(destPath)) {
-    const existing = readFileSync(destPath, 'utf8');
-    // Non aggiungere se già presente
-    if (existing.includes(`<!-- OpenBA skill: ${skillId} -->`)) return;
-    writeFileSync(destPath, existing + block);
-  } else {
-    const header = `# OpenBA Skills\n\nThis file contains OpenBA skill instructions for your AI assistant.\nDo not edit this file manually — use \`openba update\` to refresh.\n`;
-    writeFileSync(destPath, header + block);
-  }
 }
 
 // Versione corrente del package

@@ -3,7 +3,7 @@
 **Business Analyst-first spec framework for AI coding assistants.**
 
 OpenBA standardizes the BA process — from raw idea to implementation-ready PBIs —
-grounded in the real codebase, driven by structured challenge.
+grounded in the real codebase, driven by structured challenge, and aligned to BABOK.
 
 ---
 
@@ -25,11 +25,10 @@ Navigate to your project and run:
 openba setup
 ```
 
-The wizard will ask:
-1. Which AI tool you use (GitHub Copilot, Claude Code, Cursor, Windsurf, Codex, Gemini CLI, Antigravity)
-2. Which skill groups to install (Epic, Feature, PBI)
-
-Skills are copied into the correct folder for your tool automatically.
+The wizard will ask which AI coding assistants you use (you can select more than one:
+GitHub Copilot, Claude Code, Cursor, Windsurf, Codex, Gemini CLI, Antigravity).
+All 11 OpenBA v2 skills are then installed for each selected tool, in the correct
+folder and format for that tool.
 
 ---
 
@@ -37,62 +36,57 @@ Skills are copied into the correct folder for your tool automatically.
 
 | Command | What it does |
 |---|---|
-| `openba setup` | Interactive wizard — select tool and skills |
+| `openba setup` | Interactive wizard — select your AI tool(s) and install skills |
 | `openba update` | Check for new package version and update skill files |
 | `openba validate` | Verify installed skills are intact and well-formed |
 | `openba list` | Show installed skills and version |
-| `openba add [skill-id]` | Add a skill not selected during setup |
-| `openba remove [skill-id]` | Remove an installed skill |
+| `openba add [skill-id]` | Reinstall a skill missing from a project |
+| `openba remove [skill-id]` | Remove an installed skill (except `openba-init`) |
 
 ---
 
 ## Tool Support
 
-| Tool | Skills installed to |
-|---|---|
-| GitHub Copilot | `.github/copilot/skills/` |
-| Claude Code | `.claude/skills/` |
-| Cursor | `.cursor/skills/` |
-| Windsurf | `.windsurf/skills/` |
-| Codex (OpenAI) | `AGENTS.md` |
-| Gemini CLI | `GEMINI.md` |
-| Antigravity | `AGENTS.md` |
+| Tool | Commands | Skills |
+|---|---|---|
+| GitHub Copilot | `.github/prompts/` (`/openba-xxx`) | `.github/skills/` |
+| Claude Code | `.claude/commands/openba/` (`/openba:xxx`) | `.claude/skills/` |
+| Gemini CLI | `.gemini/commands/openba/` | `.gemini/skills/` |
+| Antigravity | `.agent/workflows/` | `.agent/skills/` |
+| Cursor | — | `.cursor/skills/` |
+| Windsurf | — | `.windsurf/skills/` |
+| Codex (OpenAI) | — | `.codex/skills/` |
 
 ---
 
 ## Skills
 
-After setup, use these skills in your AI tool:
+After setup, use these skills in your AI tool. `openba-init` runs once to create the
+`.openba/` workspace; `discover → trace` is the sequential BABOK pipeline; `bcm`,
+`debate`, and `status` are cross-cutting skills usable at any point.
 
 ### Core
 | Skill | What it does |
 |---|---|
-| `oba-init` | Initialize OpenBA workspace in the project |
-| `oba-status` | Query project status from the registry |
-| `oba-bcm` | Business Capability Map management |
+| `openba-init` | Initialize the `.openba/` workspace in the project |
 
-### Epic
+### Pipeline
 | Skill | What it does |
 |---|---|
-| `oba-create-epic` | Discovery + BACCM + Grill Me → PRD |
-| `oba-review-epic` | Fresh-eyes PRD review |
+| `openba-discover` | Situation analysis (AS-IS/TO-BE/Gap) and Need capture |
+| `openba-elicit` | Stakeholder mapping and elicitation planning |
+| `openba-specify` | Write Requirements at all 5 BABOK levels |
+| `openba-decompose` | Break Requirements into Features and PBIs |
+| `openba-groom` | Validate PBIs against DoR and INVEST, score readiness |
+| `openba-archiver` | Archive, reject, deprecate, or restore any artifact |
+| `openba-trace` | Rebuild the traceability matrix and status board |
 
-### Feature
+### Strategic
 | Skill | What it does |
 |---|---|
-| `oba-create-features` | Split PRD into features |
-| `oba-add-feature` | Add a feature to an existing epic |
-| `oba-remove-feature` | Remove a feature |
-| `oba-review-feature` | Fresh-eyes feature review |
-
-### PBI
-| Skill | What it does |
-|---|---|
-| `oba-create-pbis` | Split feature into INVEST-compliant PBIs |
-| `oba-add-pbi` | Add a PBI to an existing feature |
-| `oba-remove-pbi` | Remove a PBI |
-| `oba-debate-pbi` | Deep structured debate on a single PBI |
-| `oba-review-pbi` | Fresh-eyes PBI review — APPROVED / REWORK REQUIRED |
+| `openba-bcm` | Business Capability Map — strategic capability view |
+| `openba-debate` | Deep adversarial debate on a single PBI |
+| `openba-status` | Read-only project status dashboard with gap detection |
 
 ---
 
@@ -106,6 +100,8 @@ openba update
 
 `openba update` checks npm for a newer version, upgrades the global package if needed,
 then re-copies all skill files into your project. One command does everything.
+Projects still on a v1 install (`oba-*` skills) are detected automatically and
+migrated to the full v2 skill set.
 
 Run `openba validate` after an update to verify all skills are intact:
 
@@ -118,9 +114,9 @@ openba validate
 ## First Use After Setup
 
 1. Open your project in your AI tool
-2. Run `oba-init` — initializes `docs/oba/` workspace
-3. Run `oba-bcm init` — maps your business capabilities
-4. Run `oba-create-epic` — start your first epic
+2. Run `openba-init` — creates the `.openba/` workspace
+3. Run `openba-discover` — start situation analysis and capture your first Need
+4. Follow the pipeline: `discover → elicit → specify → decompose → groom → trace`
 
 ---
 

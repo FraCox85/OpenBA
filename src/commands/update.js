@@ -2,11 +2,9 @@ import chalk from 'chalk';
 import ora from 'ora';
 import { execSync } from 'child_process';
 import { cwd } from 'process';
-import { TOOLS } from '../lib/tools.js';
-import { installSkill, readConfig, writeConfig, getPackageVersion } from '../lib/installer.js';
+import { TOOLS, SKILLS } from '../lib/tools.js';
+import { installSkill, readConfig, writeConfig, getPackageVersion, wipeTool } from '../lib/installer.js';
 import enquirer from 'enquirer';
-import { rmSync, existsSync } from 'fs';
-import { join } from 'path';
 
 const { prompt } = enquirer;
 
@@ -39,6 +37,10 @@ export async function run(args) {
   console.log(chalk.dim(`  Tools:           ${selectedTools.map(t => t.name).join(', ')}`));
   console.log(chalk.dim(`  Skills:          ${config.skills.length}`));
   console.log(chalk.dim(`  Current version: ${currentVersion}\n`));
+
+  // Rileva un'installazione OpenBA v1 (skill id che non esistono più nel registro v2)
+  const knownSkillIds = new Set(SKILLS.map(s => s.id));
+  const isLegacyInstall = config.skills.some(id => !knownSkillIds.has(id));
 
   // Step 1 — Controlla se c'è una versione npm più recente
   let latestVersion = null;
@@ -82,23 +84,29 @@ export async function run(args) {
     console.log(chalk.green(`  ✓ Package is up to date (v${currentVersion})\n`));
   }
 
-  // Richiesta all'utente per pulizia
-  const { wipe } = await prompt({
-    type: 'confirm',
-    name: 'wipe',
-    message: 'Do you want to delete all existing OpenBA skills and commands before updating (ensures a clean state)?',
-    initial: true
-  });
+  let skillsToInstall = config.skills;
+  let wipe;
+
+  if (isLegacyInstall) {
+    // Migrazione v1 → v2: gli id installati non esistono più. Niente da recuperare —
+    // pulizia completa e reinstallazione dell'intero set di skill v2.
+    console.log(chalk.yellow('  ⚠  This project has a v1 OpenBA install (skill names changed in v2).'));
+    console.log(chalk.dim('     Wiping old skills/commands and installing the full v2 skill set.\n'));
+    wipe = true;
+    skillsToInstall = SKILLS.map(s => s.id);
+  } else {
+    const { wipeAnswer } = await prompt({
+      type: 'confirm',
+      name: 'wipeAnswer',
+      message: 'Do you want to delete all existing OpenBA skills and commands before updating (ensures a clean state)?',
+      initial: true
+    });
+    wipe = wipeAnswer;
+  }
 
   if (wipe) {
     for (const tool of selectedTools) {
-      const pathsToWipe = [tool.skillsPath, tool.commandsPath, tool.promptsPath].filter(Boolean);
-      for (const p of pathsToWipe) {
-        const fullPath = join(targetRoot, p);
-        if (existsSync(fullPath)) {
-          rmSync(fullPath, { recursive: true, force: true });
-        }
-      }
+      wipeTool(tool, targetRoot);
     }
     console.log(chalk.dim('  Deleted old skill and command folders.'));
   }
@@ -109,7 +117,7 @@ export async function run(args) {
 
   for (const tool of selectedTools) {
     const results = [];
-    for (const skillId of config.skills) {
+    for (const skillId of skillsToInstall) {
       const result = installSkill(skillId, tool, targetRoot);
       results.push({ skillId, ...result });
       skillSpinner.text = `[${tool.name}] Updating ${skillId}...`;
@@ -128,16 +136,21 @@ export async function run(args) {
     failed.forEach(r => console.log(chalk.red(`    ✗ ${r.skillId} — ${r.reason}`)));
   }
 
-  // Aggiorna config con nuova versione
+  // Skills ok (union di tutti i tool — deduplicata)
+  const allOkSkills = [...new Set(
+    resultsByTool.flatMap(({ results }) => results.filter(r => r.ok).map(r => r.skillId))
+  )];
+
+  // Aggiorna config con nuova versione e nuovo set di skill
   const newVersion = latestVersion || currentVersion;
-  writeConfig(targetRoot, { ...config, version: newVersion });
+  writeConfig(targetRoot, { ...config, version: newVersion, skills: allOkSkills });
 
   const totalOk = resultsByTool.reduce((sum, current) => sum + current.results.filter(r => r.ok).length, 0);
   const totalFailed = resultsByTool.reduce((sum, current) => sum + current.results.filter(r => !r.ok).length, 0);
 
   console.log('');
   if (totalFailed === 0) {
-    console.log(chalk.bold(`  ✓ ${config.skills.length} skills updated across ${selectedTools.length} tool(s) to v${newVersion}\n`));
+    console.log(chalk.bold(`  ✓ ${skillsToInstall.length} skills updated across ${selectedTools.length} tool(s) to v${newVersion}\n`));
   } else {
     console.log(chalk.bold(`  ${totalOk} updated, ${chalk.red(totalFailed + ' failed')}\n`));
     console.log(chalk.dim('  Run `openba validate` to check skill integrity.\n'));

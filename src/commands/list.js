@@ -1,6 +1,6 @@
 import chalk from 'chalk';
 import { cwd } from 'process';
-import { TOOLS, SKILLS } from '../lib/tools.js';
+import { TOOLS, SKILLS, SKILL_GROUPS } from '../lib/tools.js';
 import { readConfig, getPackageVersion } from '../lib/installer.js';
 
 export async function run(args) {
@@ -13,11 +13,12 @@ export async function run(args) {
     process.exit(0);
   }
 
-  const tool = TOOLS[config.tool];
+  const toolIds = config.tools || (config.tool ? [config.tool] : []);
+  const toolNames = toolIds.map(id => TOOLS[id]?.name || id).join(', ');
   const currentVersion = getPackageVersion();
 
   console.log(chalk.bold('\n  OpenBA — Installed Skills\n'));
-  console.log(chalk.dim(`  Tool:    ${tool?.name || config.tool}`));
+  console.log(chalk.dim(`  Tools:   ${toolNames || 'unknown'}`));
   console.log(chalk.dim(`  Version: ${config.version || 'unknown'} (current: ${currentVersion})`));
 
   if (config.version && config.version !== currentVersion) {
@@ -36,17 +37,9 @@ export async function run(args) {
   }
 
   for (const [groupId, skills] of Object.entries(groups)) {
-    const groupLabel = {
-      core: 'Core',
-      epic: 'Epic',
-      feature: 'Feature',
-      pbi: 'PBI',
-      other: 'Other'
-    }[groupId] || groupId;
-
-    console.log(chalk.bold(`  ${groupLabel}`));
+    console.log(chalk.bold(`  ${SKILL_GROUPS[groupId] || groupId}`));
     skills.forEach(s => {
-      console.log(`    ${chalk.green('✓')} ${s.id.padEnd(28)} ${chalk.dim(s.description || '')}`);
+      console.log(`    ${chalk.green('✓')} ${s.id.padEnd(20)} ${chalk.dim(s.description || '')}`);
     });
     console.log('');
   }
@@ -54,10 +47,10 @@ export async function run(args) {
   // Skill disponibili ma non installate
   const notInstalled = SKILLS.filter(s => !config.skills.includes(s.id));
   if (notInstalled.length > 0) {
-    console.log(chalk.dim('  Not installed:'));
+    console.log(chalk.dim('  Not installed (run `openba update` to reinstall the full v2 skill set):'));
     notInstalled.forEach(s => {
-      console.log(chalk.dim(`    - ${s.id.padEnd(28)} ${s.description}`));
+      console.log(chalk.dim(`    - ${s.id.padEnd(20)} ${s.description}`));
     });
-    console.log(chalk.dim('\n  Use `openba add <skill-id>` to install individual skills.\n'));
+    console.log('');
   }
 }

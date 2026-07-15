@@ -2,8 +2,10 @@ import chalk from 'chalk';
 import enquirer from 'enquirer';
 const { prompt } = enquirer;
 import { cwd } from 'process';
-import { TOOLS, CORE_SKILLS, SKILLS } from '../lib/tools.js';
+import { TOOLS, SKILLS } from '../lib/tools.js';
 import { removeSkill, readConfig, writeConfig } from '../lib/installer.js';
+
+const CORE_SKILL_IDS = SKILLS.filter(s => s.group === 'core').map(s => s.id);
 
 export async function run(args) {
   const targetRoot = cwd();
@@ -14,13 +16,17 @@ export async function run(args) {
     process.exit(1);
   }
 
-  const tool = TOOLS[config.tool];
+  const selectedTools = (config.tools || []).map(id => TOOLS[id]).filter(Boolean);
+  if (selectedTools.length === 0) {
+    console.log(chalk.red('\n  ✗ No configured tools found. Run `openba setup` first.\n'));
+    process.exit(1);
+  }
 
   let skillId = args[0];
 
   if (!skillId) {
     // Mostra solo skill installate e non core
-    const removable = config.skills.filter(id => !CORE_SKILLS.includes(id));
+    const removable = config.skills.filter(id => !CORE_SKILL_IDS.includes(id));
 
     if (removable.length === 0) {
       console.log(chalk.yellow('\n  No removable skills installed (core skills cannot be removed).\n'));
@@ -43,7 +49,7 @@ export async function run(args) {
   }
 
   // Blocca rimozione skill core
-  if (CORE_SKILLS.includes(skillId)) {
+  if (CORE_SKILL_IDS.includes(skillId)) {
     console.log(chalk.red(`\n  ✗ ${skillId} is a core skill and cannot be removed.\n`));
     process.exit(1);
   }
@@ -66,20 +72,19 @@ export async function run(args) {
     process.exit(0);
   }
 
-  const result = removeSkill(skillId, tool, targetRoot);
-
-  if (result.ok) {
-    writeConfig(targetRoot, {
-      ...config,
-      skills: config.skills.filter(id => id !== skillId)
-    });
-    console.log(chalk.green(`\n  ✓ ${skillId} removed\n`));
-  } else {
-    console.log(chalk.yellow(`\n  ⚠  ${result.reason}\n`));
-    // Rimuovi comunque dalla config anche se il file non era trovabile
-    writeConfig(targetRoot, {
-      ...config,
-      skills: config.skills.filter(id => id !== skillId)
-    });
+  console.log('');
+  for (const tool of selectedTools) {
+    const result = removeSkill(skillId, tool, targetRoot);
+    if (result.ok) {
+      console.log(chalk.green(`  ✓ [${tool.name}] ${skillId} removed`));
+    } else {
+      console.log(chalk.yellow(`  ⚠  [${tool.name}] ${result.reason}`));
+    }
   }
+
+  writeConfig(targetRoot, {
+    ...config,
+    skills: config.skills.filter(id => id !== skillId)
+  });
+  console.log('');
 }
