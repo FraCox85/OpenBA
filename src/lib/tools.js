@@ -11,7 +11,7 @@ export const TOOLS = {
   'claude': {
     id: 'claude',
     name: 'Claude Code',
-    commandsPath: '.claude/commands/openba',
+    commandsPath: '.claude/commands',
     skillsPath: '.claude/skills',
     agentsPath: '.claude/agents',
     rulesPath: '.claude/rules',
@@ -41,7 +41,7 @@ export const TOOLS = {
   'gemini': {
     id: 'gemini',
     name: 'Gemini CLI',
-    commandsPath: '.gemini/commands/openba',
+    commandsPath: '.gemini/commands',
     commandExt: '.toml',
     skillsPath: '.gemini/skills',
     instructionFile: 'GEMINI.md',
