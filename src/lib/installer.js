@@ -12,8 +12,9 @@ function ensureParent(path) {
   mkdirSync(dirname(path), { recursive: true });
 }
 
+// v3 keeps the public namespace visible everywhere: oba, oba-discover, oba-map-project...
 function commandName(skillId) {
-  return skillId.replace(/^oba-/, '').replace(/^openba-/, '');
+  return skillId;
 }
 
 export function installSkill(skillId, tool, targetRoot) {
@@ -137,8 +138,7 @@ export function removeSkill(skillId, tool, targetRoot) {
   if (tool.promptsPath) removeIfExists(join(tool.promptsPath, `${skillId}.prompt.md`));
   if (tool.commandsPath) {
     const ext = tool.commandExt || '.md';
-    const name = tool.id === 'antigravity' ? skillId : commandName(skillId);
-    removeIfExists(join(tool.commandsPath, `${name}${ext}`));
+    removeIfExists(join(tool.commandsPath, `${commandName(skillId)}${ext}`));
   }
   return removedAny ? { ok: true } : { ok: false, reason: 'Skill not installed' };
 }
@@ -146,6 +146,15 @@ export function removeSkill(skillId, tool, targetRoot) {
 // Safe cleanup: remove only OpenBA-managed assets, never whole user skill folders.
 export function wipeTool(tool, targetRoot, managedSkillIds = []) {
   for (const id of managedSkillIds) removeSkill(id, tool, targetRoot);
+
+  // v2 command folders were OpenBA-owned, so removing these legacy namespaces is safe.
+  const legacyCommandDirs = [];
+  if (tool.id === 'claude') legacyCommandDirs.push('.claude/commands/openba');
+  if (tool.id === 'gemini') legacyCommandDirs.push('.gemini/commands/openba');
+  for (const rel of legacyCommandDirs) {
+    const path = join(targetRoot, rel);
+    if (existsSync(path)) rmSync(path, { recursive: true, force: true });
+  }
 
   if (tool.agentsPath) {
     for (const agentId of AGENTS) {
