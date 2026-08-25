@@ -1,40 +1,34 @@
-// Tool definitions — ID, display name, and where skills are installed
+// Tool definitions — where OpenBA assets are installed
 export const TOOLS = {
   'github-copilot': {
     id: 'github-copilot',
     name: 'GitHub Copilot',
-    // Prompts = user-invocable commands in Copilot Chat (/openba-init, etc.)
     promptsPath: '.github/prompts',
-    // Skills = behavior instructions loaded automatically by the model
     skillsPath: '.github/skills',
-    // Whether to generate a .github/copilot-instructions.md template
     copilotInstructions: true,
-    agentsFile: null,
     description: 'GitHub Copilot (VS Code, JetBrains, web)'
   },
   'claude': {
     id: 'claude',
     name: 'Claude Code',
-    // Slash commands: /openba:init, /openba:discover, etc.
     commandsPath: '.claude/commands/openba',
-    // Behavior skills loaded automatically by the model
     skillsPath: '.claude/skills',
+    agentsPath: '.claude/agents',
+    rulesPath: '.claude/rules',
+    supportPath: '.claude/openba',
     instructionFile: 'CLAUDE.md',
-    agentsFile: null,
     description: 'Claude Code (CLI)'
   },
   'cursor': {
     id: 'cursor',
     name: 'Cursor',
     skillsPath: '.cursor/skills',
-    agentsFile: null,
     description: 'Cursor editor'
   },
   'windsurf': {
     id: 'windsurf',
     name: 'Windsurf',
     skillsPath: '.windsurf/skills',
-    agentsFile: null,
     description: 'Windsurf by Codeium'
   },
   'codex': {
@@ -42,19 +36,15 @@ export const TOOLS = {
     name: 'Codex (OpenAI)',
     skillsPath: '.codex/skills',
     instructionFile: 'AGENTS.md',
-    agentsFile: null,
     description: 'OpenAI Codex CLI'
   },
   'gemini': {
     id: 'gemini',
     name: 'Gemini CLI',
-    // Slash commands: .gemini/commands/openba/discover.toml
     commandsPath: '.gemini/commands/openba',
     commandExt: '.toml',
-    // Behavior skills
     skillsPath: '.gemini/skills',
     instructionFile: 'GEMINI.md',
-    agentsFile: null,
     description: 'Google Gemini CLI'
   },
   'antigravity': {
@@ -63,30 +53,39 @@ export const TOOLS = {
     commandsPath: '.agent/workflows',
     skillsPath: '.agent/skills',
     instructionFile: 'AGENTS.md',
-    agentsFile: null,
     description: 'Antigravity AI'
   }
 };
 
-// Skills list — ID matches folder name in /skills/
-// Pipeline order: init runs once, discover -> trace is the sequential BABOK flow,
-// bcm / debate / status are cross-cutting skills usable at any point.
+// OpenBA v3 deliberately keeps the powerful SOSFBA workflow shape.
+// These are user-facing capabilities. Specialist roles live under /agents.
 export const SKILLS = [
-  { id: 'openba-init',      name: 'openba-init',      group: 'core',      description: 'Initialize the .openba workspace (run once per project)' },
-  { id: 'openba-discover',  name: 'openba-discover',  group: 'pipeline',  description: 'Situation analysis (AS-IS/TO-BE/Gap) and Need capture' },
-  { id: 'openba-elicit',    name: 'openba-elicit',    group: 'pipeline',  description: 'Stakeholder mapping and elicitation planning' },
-  { id: 'openba-specify',   name: 'openba-specify',   group: 'pipeline',  description: 'Write Requirements at all 5 BABOK levels' },
-  { id: 'openba-decompose', name: 'openba-decompose', group: 'pipeline',  description: 'Break Requirements into Features and PBIs' },
-  { id: 'openba-groom',     name: 'openba-groom',     group: 'pipeline',  description: 'Validate PBIs against DoR and INVEST, score readiness' },
-  { id: 'openba-archiver',  name: 'openba-archiver',  group: 'pipeline',  description: 'Archive, reject, deprecate, or restore any artifact' },
-  { id: 'openba-trace',     name: 'openba-trace',     group: 'pipeline',  description: 'Rebuild the traceability matrix and status board' },
-  { id: 'openba-bcm',       name: 'openba-bcm',       group: 'strategic', description: 'Business Capability Map — strategic capability view' },
-  { id: 'openba-debate',    name: 'openba-debate',    group: 'strategic', description: 'Deep adversarial debate on a single PBI' },
-  { id: 'openba-status',    name: 'openba-status',    group: 'strategic', description: 'Read-only project status dashboard with gap detection' },
+  { id: 'oba',             name: 'oba',             group: 'core',     description: 'Main product workflow and orchestrator' },
+  { id: 'oba-core-rules',  name: 'oba-core-rules',  group: 'internal', description: 'Shared governance and source-of-truth rules' },
+  { id: 'oba-discover',    name: 'oba-discover',    group: 'product',  description: 'Adaptive BA elicitation and challenge' },
+  { id: 'oba-impact',      name: 'oba-impact',      group: 'product',  description: 'Brownfield blast-radius and dependency analysis' },
+  { id: 'oba-ux-review',   name: 'oba-ux-review',   group: 'product',  description: 'UX/product design analysis and verification' },
+  { id: 'oba-map-project', name: 'oba-map-project', group: 'project',  description: 'Map, refresh and reconcile project knowledge' },
+  { id: 'oba-backlog',     name: 'oba-backlog',     group: 'project',  description: 'ADHD-friendly backlog capture and refinement' },
+  { id: 'oba-resume',      name: 'oba-resume',      group: 'project',  description: 'Resume work from persistent state' }
+];
+
+export const AGENTS = [
+  'oba-product-analyst',
+  'oba-product-engineer',
+  'oba-product-designer',
+  'oba-archivist'
+];
+
+export const SUPPORT_FILES = [
+  { source: '00-oba-governance.md', target: '00-oba-governance.md', kind: 'rule' },
+  { source: 'team-playbook.md', target: 'team-playbook.md', kind: 'support' },
+  { source: 'agy-verify.md', target: 'agy-verify.md', kind: 'support' }
 ];
 
 export const SKILL_GROUPS = {
-  core:      'Core',
-  pipeline:  'Pipeline (init → discover → ... → trace)',
-  strategic: 'Strategic',
+  core: 'Core',
+  product: 'Product workflow',
+  project: 'Project knowledge',
+  internal: 'Internal'
 };
