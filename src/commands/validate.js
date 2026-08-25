@@ -2,15 +2,11 @@ import chalk from 'chalk';
 import { existsSync, readFileSync } from 'fs';
 import { join } from 'path';
 import { cwd } from 'process';
-import { TOOLS } from '../lib/tools.js';
+import { TOOLS, AGENTS, SUPPORT_FILES } from '../lib/tools.js';
 import { readConfig } from '../lib/installer.js';
 
-// Sezioni comuni a tutte le skill v2
-const REQUIRED_SECTIONS = ['## Objective', '## Constraints'];
-
-export async function run(args) {
+export async function run() {
   const targetRoot = cwd();
-
   console.log(chalk.bold('\n  openba validate\n'));
 
   const config = readConfig(targetRoot);
@@ -21,9 +17,8 @@ export async function run(args) {
 
   const toolIds = config.tools || (config.tool ? [config.tool] : []);
   const selectedTools = toolIds.map(id => TOOLS[id]).filter(Boolean);
-
-  if (selectedTools.length === 0) {
-    console.log(chalk.red('  ✗ No configured tools found. Run `openba setup` to configure.\n'));
+  if (!selectedTools.length) {
+    console.log(chalk.red('  ✗ No configured tools found.\n'));
     process.exit(1);
   }
 
@@ -33,66 +28,56 @@ export async function run(args) {
     console.log(chalk.bold(`  ${tool.name}:`));
     const results = [];
 
-    for (const skillId of config.skills) {
+    for (const skillId of config.skills || []) {
       const issues = [];
-
       if (!tool.skillsPath) {
-        results.push({ skillId, ok: false, issues: ['Tool has no skillsPath defined'] });
-        continue;
-      }
-
-      const skillPath = join(targetRoot, tool.skillsPath, skillId, 'SKILL.md');
-      if (!existsSync(skillPath)) {
-        results.push({ skillId, ok: false, issues: ['File not found — run `openba update` to reinstall'] });
-        continue;
-      }
-
-      const content = readFileSync(skillPath, 'utf8');
-
-      // Verifica frontmatter YAML
-      if (!content.startsWith('---')) {
-        issues.push('Missing YAML frontmatter');
+        issues.push('Tool has no skillsPath defined');
       } else {
-        const frontmatterEnd = content.indexOf('---', 3);
-        if (frontmatterEnd === -1) {
-          issues.push('Malformed YAML frontmatter — missing closing ---');
+        const skillPath = join(targetRoot, tool.skillsPath, skillId, 'SKILL.md');
+        if (!existsSync(skillPath)) {
+          issues.push('SKILL.md not found');
         } else {
-          const frontmatter = content.slice(3, frontmatterEnd);
-          if (!frontmatter.includes('name:')) issues.push('Frontmatter missing field: name');
-          if (!frontmatter.includes('description:')) issues.push('Frontmatter missing field: description');
+          const content = readFileSync(skillPath, 'utf8');
+          if (!content.startsWith('---')) issues.push('Missing YAML frontmatter');
+          const frontmatterEnd = content.indexOf('---', 3);
+          if (frontmatterEnd === -1) {
+            issues.push('Malformed YAML frontmatter');
+          } else {
+            const frontmatter = content.slice(3, frontmatterEnd);
+            if (!frontmatter.includes('name:')) issues.push('Frontmatter missing name');
+            if (!frontmatter.includes('description:')) issues.push('Frontmatter missing description');
+          }
+          if (content.trim().length < 120) issues.push('Skill content looks unexpectedly empty');
         }
       }
+      results.push({ asset: skillId, ok: issues.length === 0, issues });
+    }
 
-      // Verifica sezioni comuni a tutte le skill v2
-      for (const section of REQUIRED_SECTIONS) {
-        if (!content.includes(section)) {
-          issues.push(`Missing section: ${section}`);
-        }
+    if (tool.agentsPath) {
+      for (const agentId of AGENTS) {
+        const path = join(targetRoot, tool.agentsPath, `${agentId}.md`);
+        results.push({ asset: `agent:${agentId}`, ok: existsSync(path), issues: existsSync(path) ? [] : ['Agent file not found'] });
       }
+    }
 
-      results.push({ skillId, ok: issues.length === 0, issues });
+    for (const file of SUPPORT_FILES) {
+      const base = file.kind === 'rule' ? tool.rulesPath : tool.supportPath;
+      if (!base) continue;
+      const path = join(targetRoot, base, file.target);
+      results.push({ asset: `support:${file.target}`, ok: existsSync(path), issues: existsSync(path) ? [] : ['Support file not found'] });
     }
 
     const passed = results.filter(r => r.ok);
     const failed = results.filter(r => !r.ok);
-
-    passed.forEach(r => console.log(chalk.green(`    ✓ ${r.skillId}`)));
+    passed.forEach(r => console.log(chalk.green(`    ✓ ${r.asset}`)));
     failed.forEach(r => {
-      console.log(chalk.red(`    ✗ ${r.skillId}`));
+      console.log(chalk.red(`    ✗ ${r.asset}`));
       r.issues.forEach(issue => console.log(chalk.dim(`      · ${issue}`)));
     });
-
-    console.log(chalk.dim(`    ${passed.length} passed, ${failed.length} failed`));
-    console.log('');
-
-    if (failed.length > 0) anyFailed = true;
+    console.log(chalk.dim(`    ${passed.length} passed, ${failed.length} failed\n`));
+    if (failed.length) anyFailed = true;
   }
 
-  if (anyFailed) {
-    console.log(chalk.dim('  Run `openba update` to reinstall corrupted skills.\n'));
-  } else {
-    console.log(chalk.green('  ✓ All skills valid\n'));
-  }
-
+  console.log(anyFailed ? chalk.dim('  Run `openba update` to repair managed assets.\n') : chalk.green('  ✓ OpenBA installation valid\n'));
   process.exit(anyFailed ? 1 : 0);
 }
