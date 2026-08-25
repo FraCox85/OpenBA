@@ -1,9 +1,12 @@
 # OpenBA
 
-**Business Analyst-first spec framework for AI coding assistants.**
+**A product engineering agent system that thinks like a strong BA before it codes.**
 
-OpenBA standardizes the BA process — from raw idea to implementation-ready PBIs —
-grounded in the real codebase, driven by structured challenge, and aligned to BABOK.
+OpenBA helps AI coding assistants understand what you really want, verify how the current system works, map the real blast radius, challenge weak solutions, implement the approved change and verify the result.
+
+It is intentionally **powerful underneath, simple to use**.
+
+> OpenBA v3 is based on the battle-tested SOSFBA agent workflow, generalized for any project. The rigid OpenBA v2 BABOK pipeline is retired.
 
 ---
 
@@ -15,110 +18,163 @@ npm install -g @fracox85/openba
 
 Requires Node.js 20+.
 
----
-
 ## Setup
 
-Navigate to your project and run:
+Inside your project:
 
 ```bash
 openba setup
 ```
 
-The wizard will ask which AI coding assistants you use (you can select more than one:
-GitHub Copilot, Claude Code, Cursor, Windsurf, Codex, Gemini CLI, Antigravity).
-All 11 OpenBA v2 skills are then installed for each selected tool, in the correct
-folder and format for that tool.
+Select one or more supported AI coding assistants. OpenBA installs the same core capabilities in each tool's native location. Claude Code also receives native specialist-agent definitions.
+
+Supported tools:
+- GitHub Copilot
+- Claude Code
+- Cursor
+- Windsurf
+- Codex
+- Gemini CLI
+- Antigravity
 
 ---
 
-## Commands
+## The team
 
-| Command | What it does |
-|---|---|
-| `openba setup` | Interactive wizard — select your AI tool(s) and install skills |
-| `openba update` | Check for new package version and update skill files |
-| `openba validate` | Verify installed skills are intact and well-formed |
-| `openba list` | Show installed skills and version |
-| `openba add [skill-id]` | Reinstall a skill missing from a project |
-| `openba remove [skill-id]` | Remove an installed skill (except `openba-init`) |
+### Product Analyst
+A senior BA/Product Analyst that:
+- treats the request as a hypothesis, not automatically as a requirement;
+- reads the repo before asking questions;
+- elicits only what is missing;
+- challenges assumptions and over-complicated solutions;
+- uses BA techniques (AS-IS/TO-BE, 5 Whys, BACCM, scenarios, INVEST, etc.) as a toolbox, not bureaucracy;
+- writes only the minimum useful requirements/rules/acceptance criteria;
+- refines the backlog;
+- performs functional verification.
 
----
+**Mandatory checkpoint:** when it understands enough, it always tells you **"What I understood"** before the work is promoted. You can correct its interpretation before it goes further.
 
-## Tool Support
+### Product Engineer
+Maps the codebase, follows upstream/downstream dependencies, performs blast-radius analysis, designs the technical solution, implements code/tests and performs technical verification.
 
-| Tool | Commands | Skills |
-|---|---|---|
-| GitHub Copilot | `.github/prompts/` (`/openba-xxx`) | `.github/skills/` |
-| Claude Code | `.claude/commands/openba/` (`/openba:xxx`) | `.claude/skills/` |
-| Gemini CLI | `.gemini/commands/openba/` | `.gemini/skills/` |
-| Antigravity | `.agent/workflows/` | `.agent/skills/` |
-| Cursor | — | `.cursor/skills/` |
-| Windsurf | — | `.windsurf/skills/` |
-| Codex (OpenAI) | — | `.codex/skills/` |
+### Product Designer
+Used when a user-facing change actually benefits from UX analysis. Protects task flow, IA, states, recovery, cognitive load, accessibility and journey coherence.
 
----
-
-## Skills
-
-After setup, use these skills in your AI tool. `openba-init` runs once to create the
-`.openba/` workspace; `discover → trace` is the sequential BABOK pipeline; `bcm`,
-`debate`, and `status` are cross-cutting skills usable at any point.
-
-### Core
-| Skill | What it does |
-|---|---|
-| `openba-init` | Initialize the `.openba/` workspace in the project |
-
-### Pipeline
-| Skill | What it does |
-|---|---|
-| `openba-discover` | Situation analysis (AS-IS/TO-BE/Gap) and Need capture |
-| `openba-elicit` | Stakeholder mapping and elicitation planning |
-| `openba-specify` | Write Requirements at all 5 BABOK levels |
-| `openba-decompose` | Break Requirements into Features and PBIs |
-| `openba-groom` | Validate PBIs against DoR and INVEST, score readiness |
-| `openba-archiver` | Archive, reject, deprecate, or restore any artifact |
-| `openba-trace` | Rebuild the traceability matrix and status board |
-
-### Strategic
-| Skill | What it does |
-|---|---|
-| `openba-bcm` | Business Capability Map — strategic capability view |
-| `openba-debate` | Deep adversarial debate on a single PBI |
-| `openba-status` | Read-only project status dashboard with gap detection |
+### Archivist / State Keeper
+Keeps STATE, backlog, decisions and metadata resumable. It records decisions; it does not make product decisions.
 
 ---
 
-## Keeping Skills Updated
+## Main capabilities
 
-When a new version of OpenBA is published:
+| Capability | What it does |
+|---|---|
+| `oba` | Main product workflow / orchestrator |
+| `oba-discover` | Adaptive BA elicitation and challenge |
+| `oba-impact` | Brownfield blast-radius analysis |
+| `oba-ux-review` | UX analysis / verification when relevant |
+| `oba-map-project` | Deep project mapping, refresh, diff and reconcile |
+| `oba-backlog` | ADHD-friendly NOW / NEXT / WAITING / LATER backlog |
+| `oba-resume` | Resume exactly where work stopped |
+| `oba-core-rules` | Shared governance loaded by specialists |
+
+Normal use is simply:
+
+```text
+/oba <what you want to change>
+```
+
+The orchestrator decides how much process the work needs.
+
+---
+
+## Project mapping and reconcile
+
+Start a brownfield project with:
+
+```text
+/oba-map-project init
+```
+
+OpenBA maps concepts through UI, API, data, jobs, integrations, consumers and tests — not just folders.
+
+When your notes or the map are wrong:
+
+```text
+/oba-map-project reconcile notes.md
+```
+
+Reconcile verifies each correction against code/evidence and automatically checks related maps that may also be affected.
+
+---
+
+## ADHD-friendly backlog
+
+The backlog is a daily operational view, not an artifact hierarchy.
+
+```text
+🔥 NOW
+➡ NEXT
+⏸ WAITING
+💡 LATER
+```
+
+Items stay short and expose one `Next →` action. Detailed discovery, rules, scenarios and impact use progressive disclosure only when needed.
+
+OpenBA does **not** require Need → Requirement → Feature → PBI.
+
+---
+
+## Workflow
+
+Conceptually:
+
+```text
+INTAKE
+  ↓
+DISCOVERY (adaptive)
+  ↓
+WHAT I UNDERSTOOD → user confirmation
+  ↓
+IMPACT
+  ↓
+UX (if relevant)
+  ↓
+CHALLENGE / final gate (if needed)
+  ↓
+SPEC/CONTRACT (minimum useful)
+  ↓
+BUILD
+  ↓
+VERIFY
+  ↓
+CLOSE
+```
+
+A simple bug can pass through this very quickly. A risky feature gets deeper analysis. The user does not have to manually operate every phase.
+
+OpenSpec is supported when the project already uses it, but is **not required by OpenBA**.
+
+---
+
+## CLI maintenance
 
 ```bash
+openba setup
 openba update
-```
-
-`openba update` checks npm for a newer version, upgrades the global package if needed,
-then re-copies all skill files into your project. One command does everything.
-Projects still on a v1 install (`oba-*` skills) are detected automatically and
-migrated to the full v2 skill set.
-
-Run `openba validate` after an update to verify all skills are intact:
-
-```bash
 openba validate
+openba list
+openba add <skill-id>
+openba remove <skill-id>
 ```
 
----
-
-## First Use After Setup
-
-1. Open your project in your AI tool
-2. Run `openba-init` — creates the `.openba/` workspace
-3. Run `openba-discover` — start situation analysis and capture your first Need
-4. Follow the pipeline: `discover → elicit → specify → decompose → groom → trace`
+`openba update` removes/replaces only OpenBA-managed assets. It never wipes unrelated skill folders from your AI tool.
 
 ---
+
+## Status
+
+OpenBA v3 is currently being developed on the v3 branch before release to npm.
 
 ## License
 
