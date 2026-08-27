@@ -69,24 +69,26 @@ export const TOOLS = {
 };
 
 // Skills list — ID matches folder name in /skills/
-// Pipeline order: init runs once, discover -> trace is the sequential BABOK flow,
-// bcm / debate / status are cross-cutting skills usable at any point.
+// Pipeline order: init runs once, discover -> trace is the sequential BABOK flow.
+// bcm / debate / status / ui are cross-cutting and usable when relevant.
 export const SKILLS = [
-  { id: 'openba-init',      name: 'openba-init',      group: 'core',      description: 'Initialize the .openba workspace (run once per project)' },
-  { id: 'openba-discover',  name: 'openba-discover',  group: 'pipeline',  description: 'Situation analysis (AS-IS/TO-BE/Gap) and Need capture' },
-  { id: 'openba-elicit',    name: 'openba-elicit',    group: 'pipeline',  description: 'Stakeholder mapping and elicitation planning' },
-  { id: 'openba-specify',   name: 'openba-specify',   group: 'pipeline',  description: 'Write Requirements at all 5 BABOK levels' },
-  { id: 'openba-decompose', name: 'openba-decompose', group: 'pipeline',  description: 'Break Requirements into Features and PBIs' },
-  { id: 'openba-groom',     name: 'openba-groom',     group: 'pipeline',  description: 'Validate PBIs against DoR and INVEST, score readiness' },
-  { id: 'openba-archiver',  name: 'openba-archiver',  group: 'pipeline',  description: 'Archive, reject, deprecate, or restore any artifact' },
-  { id: 'openba-trace',     name: 'openba-trace',     group: 'pipeline',  description: 'Rebuild the traceability matrix and status board' },
-  { id: 'openba-bcm',       name: 'openba-bcm',       group: 'strategic', description: 'Business Capability Map — strategic capability view' },
-  { id: 'openba-debate',    name: 'openba-debate',    group: 'strategic', description: 'Deep adversarial debate on a single PBI' },
-  { id: 'openba-status',    name: 'openba-status',    group: 'strategic', description: 'Read-only project status dashboard with gap detection' },
+  { id: 'openba-init',      name: 'openba-init',      group: 'core',       description: 'Initialize the .openba workspace (run once per project)' },
+  { id: 'openba-discover',  name: 'openba-discover',  group: 'pipeline',   description: 'Situation analysis (AS-IS/TO-BE/Gap) and Need capture' },
+  { id: 'openba-elicit',    name: 'openba-elicit',    group: 'pipeline',   description: 'Stakeholder mapping and elicitation planning' },
+  { id: 'openba-specify',   name: 'openba-specify',   group: 'pipeline',   description: 'Write Requirements at all 5 BABOK levels' },
+  { id: 'openba-decompose', name: 'openba-decompose', group: 'pipeline',   description: 'Break Requirements into Features and PBIs' },
+  { id: 'openba-groom',     name: 'openba-groom',     group: 'pipeline',   description: 'Validate PBIs against DoR and INVEST, score readiness' },
+  { id: 'openba-archiver',  name: 'openba-archiver',  group: 'pipeline',   description: 'Archive, reject, deprecate, or restore any artifact' },
+  { id: 'openba-trace',     name: 'openba-trace',     group: 'pipeline',   description: 'Rebuild the traceability matrix and status board' },
+  { id: 'openba-bcm',       name: 'openba-bcm',       group: 'strategic',  description: 'Business Capability Map — strategic capability view' },
+  { id: 'openba-debate',    name: 'openba-debate',    group: 'strategic',  description: 'Deep adversarial debate on a single PBI' },
+  { id: 'openba-status',    name: 'openba-status',    group: 'strategic',  description: 'Read-only project status dashboard with gap detection' },
+  { id: 'openba-ui',        name: 'openba-ui',        group: 'experience', description: 'Establish, review, implement, and reconcile product UI against DESIGN.md' },
 ];
 
 export const SKILL_GROUPS = {
-  core:      'Core',
-  pipeline:  'Pipeline (init → discover → ... → trace)',
-  strategic: 'Strategic',
+  core:       'Core',
+  pipeline:   'Pipeline (init → discover → ... → trace)',
+  strategic:  'Strategic',
+  experience: 'Experience / UI',
 };
