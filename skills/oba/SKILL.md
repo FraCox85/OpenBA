@@ -71,16 +71,26 @@ Do not design yet.
 
 If impact changes the meaning or scope of the request, return to Product Analyst and re-run the user checkpoint.
 
-## 4. UX — Product Designer when relevant
+## 4. UX / UI — Product Designer when relevant
 
-Use Designer for user-facing changes where flow, placement, states, recovery, accessibility or cognitive load matter.
+Use Designer for user-facing changes where flow, placement, states, recovery, accessibility, visual hierarchy or cognitive load matter.
 Do not invoke UX ceremonially for changes with no meaningful user surface.
 
-If UX implies a business-rule/scope change, return to Product Analyst.
+For frontend work:
+- read project-root `DESIGN.md` when present;
+- use `oba-ux-review` for work-specific task/journey analysis and verification;
+- use `oba-ui establish` when the project needs a durable visual source of truth;
+- use `oba-ui review` for design-system/visual consistency audits;
+- use `oba-ui reconcile` when DESIGN.md, shared primitives and the real frontend may have drifted.
+
+`DESIGN.md` is durable product-wide implementation guidance, not a replacement for requirements or `.product/ux/<work-id>.md`.
+TasteSkill and external design references are secondary heuristics only.
+
+If UX/UI implies a business-rule or scope change, return to Product Analyst.
 
 ## 5. CHALLENGE — Product Analyst second pass
 
-For non-trivial changes, give Analyst discovery + impact + UX and ask:
+For non-trivial changes, give Analyst discovery + impact + UX/UI and ask:
 
 > Given the evidence, is the original proposed solution still the right one? What would you do, and what would you explicitly not do?
 
@@ -108,7 +118,8 @@ Use the project's existing normative mechanism when available (OpenSpec, issue/s
 - business rules;
 - scenarios / acceptance criteria;
 - scope and non-goals;
-- links to impact/UX where useful.
+- links to impact/UX where useful;
+- relevant DESIGN.md rules for user-facing work when they materially constrain implementation.
 
 If OpenSpec is present, validate it strictly. If not, do not introduce it just for OpenBA.
 
@@ -124,13 +135,15 @@ gate: APPROVED_FOR_BUILD
 Engineer owns application code and automated tests.
 No other specialist edits product code in parallel.
 
+For user-facing work, Engineer receives the approved UX/UI handoff and reuses DESIGN.md/shared primitives. A local implementation detail must not silently become a new design standard.
+
 If BUILD reveals hidden impact, new rule, migration issue or unapproved trade-off, stop and return to IMPACT/DISCOVERY instead of inventing a workaround.
 
 ## 9. VERIFY
 
 Verify independently by dimension:
 - Product Analyst → functional/product outcome;
-- Product Designer → UX when relevant;
+- Product Designer → UX/UI, DESIGN.md coherence and relevant states;
 - Product Engineer → technical/tests/build;
 - optional independent external review when configured.
 
@@ -140,6 +153,7 @@ A technical PASS does not compensate for a functional or critical UX FAIL.
 
 Archivist/state keeper updates STATE, backlog, decisions and archive/history as appropriate.
 Refresh/reconcile project maps when the change modifies stable relationships.
+Use `oba-ui reconcile` when durable frontend/design relationships changed or drift is suspected.
 
 ## Definition of Done
 
