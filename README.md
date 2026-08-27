@@ -58,7 +58,7 @@ A senior BA/Product Analyst that:
 Maps the codebase, follows upstream/downstream dependencies, performs blast-radius analysis, designs the technical solution, implements code/tests and performs technical verification.
 
 ### Product Designer
-Used when a user-facing change actually benefits from UX analysis. Protects task flow, IA, states, recovery, cognitive load, accessibility and journey coherence.
+Used when a user-facing change benefits from UX/UI analysis. Protects task flow, IA, states, recovery, cognitive load, accessibility, visual hierarchy and design-system coherence. It owns durable `DESIGN.md` guidance; Product Engineer still owns application-code implementation.
 
 ### Archivist / State Keeper
 Keeps STATE, backlog, decisions and metadata resumable. It records decisions; it does not make product decisions.
@@ -72,7 +72,8 @@ Keeps STATE, backlog, decisions and metadata resumable. It records decisions; it
 | `oba` | Main product workflow / orchestrator |
 | `oba-discover` | Adaptive BA elicitation and challenge |
 | `oba-impact` | Brownfield blast-radius analysis |
-| `oba-ux-review` | UX analysis / verification when relevant |
+| `oba-ux-review` | Work-specific UX analysis / verification when relevant |
+| `oba-ui` | Establish, review and reconcile durable visual/UI rules against project `DESIGN.md` |
 | `oba-map-project` | Deep project mapping, refresh, diff and reconcile |
 | `oba-backlog` | ADHD-friendly NOW / NEXT / WAITING / LATER backlog |
 | `oba-resume` | Resume exactly where work stopped |
@@ -85,6 +86,28 @@ Normal use is simply:
 ```
 
 The orchestrator decides how much process the work needs.
+
+---
+
+## UI design and DESIGN.md
+
+For products with a frontend, OpenBA can maintain a project-root `DESIGN.md` as the durable source of truth for visual and interaction rules.
+
+Typical commands:
+
+```text
+/oba-ui establish
+/oba-ui review <page-or-flow>
+/oba-ui reconcile
+```
+
+`oba-ui` inspects the real frontend, shared components/tokens and approved product intent before recommending changes. Existing coherent patterns are explicitly protected under **Good — don't touch**.
+
+`DESIGN.md` is product-wide implementation guidance, not a replacement for requirements, backlog items or work-specific `.product/ux/` analysis.
+
+TasteSkill or external DESIGN.md collections may be used as **optional secondary heuristics** for hierarchy, composition, spacing, density, restraint and anti-pattern detection. They never override approved product intent, accepted workflows or `DESIGN.md`, and they are not runtime dependencies.
+
+Application code remains owned by Product Engineer through the normal `oba` build gate.
 
 ---
 
@@ -138,7 +161,7 @@ WHAT I UNDERSTOOD → user confirmation
   ↓
 IMPACT
   ↓
-UX (if relevant)
+UX / UI (if relevant)
   ↓
 CHALLENGE / final gate (if needed)
   ↓
@@ -174,7 +197,7 @@ openba remove <skill-id>
 
 ## Status
 
-OpenBA v3 is currently being developed on the v3 branch before release to npm.
+OpenBA v3 is the current architecture. The package version remains pre-release until runtime/npm smoke testing is completed.
 
 ## License
 
