@@ -60,14 +60,15 @@ export const TOOLS = {
 // OpenBA v3 deliberately keeps the powerful SOSFBA workflow shape.
 // These are user-facing capabilities. Specialist roles live under /agents.
 export const SKILLS = [
-  { id: 'oba',             name: 'oba',             group: 'core',     description: 'Main product workflow and orchestrator' },
-  { id: 'oba-core-rules',  name: 'oba-core-rules',  group: 'internal', description: 'Shared governance and source-of-truth rules' },
-  { id: 'oba-discover',    name: 'oba-discover',    group: 'product',  description: 'Adaptive BA elicitation and challenge' },
-  { id: 'oba-impact',      name: 'oba-impact',      group: 'product',  description: 'Brownfield blast-radius and dependency analysis' },
-  { id: 'oba-ux-review',   name: 'oba-ux-review',   group: 'product',  description: 'UX/product design analysis and verification' },
-  { id: 'oba-map-project', name: 'oba-map-project', group: 'project',  description: 'Map, refresh and reconcile project knowledge' },
-  { id: 'oba-backlog',     name: 'oba-backlog',     group: 'project',  description: 'ADHD-friendly backlog capture and refinement' },
-  { id: 'oba-resume',      name: 'oba-resume',      group: 'project',  description: 'Resume work from persistent state' }
+  { id: 'oba',             name: 'oba',             group: 'core',       description: 'Main product workflow and orchestrator' },
+  { id: 'oba-core-rules',  name: 'oba-core-rules',  group: 'internal',   description: 'Shared governance and source-of-truth rules' },
+  { id: 'oba-discover',    name: 'oba-discover',    group: 'product',    description: 'Adaptive BA elicitation and challenge' },
+  { id: 'oba-impact',      name: 'oba-impact',      group: 'product',    description: 'Brownfield blast-radius and dependency analysis' },
+  { id: 'oba-ux-review',   name: 'oba-ux-review',   group: 'experience', description: 'UX/product design analysis and verification' },
+  { id: 'oba-ui',          name: 'oba-ui',          group: 'experience', description: 'Establish, review and reconcile durable UI rules in DESIGN.md' },
+  { id: 'oba-map-project', name: 'oba-map-project', group: 'project',    description: 'Map, refresh and reconcile project knowledge' },
+  { id: 'oba-backlog',     name: 'oba-backlog',     group: 'project',    description: 'ADHD-friendly backlog capture and refinement' },
+  { id: 'oba-resume',      name: 'oba-resume',      group: 'project',    description: 'Resume work from persistent state' }
 ];
 
 export const AGENTS = [
@@ -86,6 +87,7 @@ export const SUPPORT_FILES = [
 export const SKILL_GROUPS = {
   core: 'Core',
   product: 'Product workflow',
+  experience: 'Experience / UI',
   project: 'Project knowledge',
   internal: 'Internal'
 };
