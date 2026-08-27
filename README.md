@@ -27,7 +27,7 @@ openba setup
 
 The wizard will ask which AI coding assistants you use (you can select more than one:
 GitHub Copilot, Claude Code, Cursor, Windsurf, Codex, Gemini CLI, Antigravity).
-All 11 OpenBA v2 skills are then installed for each selected tool, in the correct
+All 12 OpenBA v2 skills are then installed for each selected tool, in the correct
 folder and format for that tool.
 
 ---
@@ -63,7 +63,7 @@ folder and format for that tool.
 
 After setup, use these skills in your AI tool. `openba-init` runs once to create the
 `.openba/` workspace; `discover → trace` is the sequential BABOK pipeline; `bcm`,
-`debate`, and `status` are cross-cutting skills usable at any point.
+`debate`, `status`, and `ui` are cross-cutting skills usable when relevant.
 
 ### Core
 | Skill | What it does |
@@ -87,6 +87,24 @@ After setup, use these skills in your AI tool. `openba-init` runs once to create
 | `openba-bcm` | Business Capability Map — strategic capability view |
 | `openba-debate` | Deep adversarial debate on a single PBI |
 | `openba-status` | Read-only project status dashboard with gap detection |
+
+### Experience / UI
+| Skill | What it does |
+|---|---|
+| `openba-ui` | Establish, review, implement, and reconcile product UI against a durable project `DESIGN.md` |
+
+`openba-ui` is intentionally optional in practice: it is installed with the rest of OpenBA,
+but only creates or updates `DESIGN.md` when you explicitly use it on a project with a UI.
+It can use external design heuristics such as TasteSkill as secondary guidance, while
+OpenBA requirements, accepted workflows, existing product conventions, and `DESIGN.md`
+remain authoritative.
+
+Typical modes:
+
+- `openba-ui establish` — inspect the existing frontend and create/formalize `DESIGN.md`
+- `openba-ui review` — audit UI and classify Critical / Major / Minor / Good — don't touch
+- `openba-ui implement` — apply an understood UI change without disturbing accepted behavior
+- `openba-ui reconcile` — detect design drift vs document drift vs requirement drift
 
 ---
 
@@ -117,6 +135,7 @@ openba validate
 2. Run `openba-init` — creates the `.openba/` workspace
 3. Run `openba-discover` — start situation analysis and capture your first Need
 4. Follow the pipeline: `discover → elicit → specify → decompose → groom → trace`
+5. If the product has a frontend, run `openba-ui establish` when you want to formalize its visual language
 
 ---
 
