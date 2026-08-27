@@ -1,15 +1,17 @@
 {
   "name": "@fracox85/openba",
-  "version": "2.0.0",
-  "description": "OpenBA — Business Analyst-first spec framework for AI coding assistants",
+  "version": "3.0.0-alpha.1",
+  "description": "OpenBA — product engineering agent system with BA-first discovery, brownfield impact analysis and project knowledge",
   "keywords": [
     "business-analyst",
-    "prd",
-    "pbi",
-    "spec",
-    "ai",
+    "product-engineering",
+    "ai-agents",
+    "requirements",
+    "brownfield",
+    "impact-analysis",
     "copilot",
-    "cursor",
+    "claude",
+    "codex",
     "openba"
   ],
   "author": "FraCox85",
@@ -29,7 +31,9 @@
   "files": [
     "bin/",
     "src/",
-    "skills/"
+    "skills/",
+    "agents/",
+    "support/"
   ],
   "engines": {
     "node": ">=20.0.0"

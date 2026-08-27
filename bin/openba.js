@@ -1,6 +1,5 @@
 #!/usr/bin/env node
 
-import { createRequire } from 'module';
 import { readFileSync } from 'fs';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
@@ -48,19 +47,27 @@ switch (command) {
 
 function printHelp() {
   console.log(`
-OpenBA v${pkg.version} — Business Analyst-first spec framework
+OpenBA v${pkg.version} — Product Engineering Agent System
 
 Usage:
-  openba setup     Interactive setup wizard — select your AI tool and skills
-  openba update    Check for new version and update installed skills
-  openba validate  Verify installed skills are intact and well-formed
-  openba list      Show installed skills and their versions
-  openba add       Add a skill not selected during setup
-  openba remove    Remove an installed skill
+  openba setup     Install OBA capabilities for your AI coding tools
+  openba update    Update OpenBA-managed skills/team assets safely
+  openba validate  Verify installed skills and specialist assets
+  openba list      Show installed capabilities
+  openba add       Add an optional capability
+  openba remove    Remove an installed non-core capability
+
+Runtime capabilities after setup include:
+  oba              Main product workflow
+  oba-discover     Adaptive BA elicitation
+  oba-impact       Brownfield blast-radius analysis
+  oba-map-project  Project map / diff / reconcile
+  oba-backlog      NOW / NEXT / WAITING / LATER backlog
+  oba-resume       Resume persistent state
 
 Options:
   -v, --version    Show version
-  -h, --help       Show this help
+  -h, --help       Show help
 
 Docs: https://github.com/FraCox85/OpenBA
 `);
